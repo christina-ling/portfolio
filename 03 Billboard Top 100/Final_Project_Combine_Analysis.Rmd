@@ -1,0 +1,259 @@
+---
+title: "Final Project Combine Analysis"
+author: "Christina Ling, Charles Naylor, Sylvia Mawusi Ayikpah"
+date: "December 5, 2018"
+output: html_document
+---
+
+
+```{r libraries}
+## ONCE: install.packages("tm")
+suppressPackageStartupMessages(library(tm))
+suppressPackageStartupMessages(library(tidyverse))
+library(ggplot2)
+library(tokenizers)
+library(cluster)
+suppressPackageStartupMessages(library(factoextra))
+suppressPackageStartupMessages(library(gridExtra))
+```
+
+A little bit of cleaning up.
+
+```{r import data and examination}
+filename="data.csv"
+
+music <- read.csv(filename, sep=",", header=T, na.string=c(""), stringsAsFactors=F)
+
+str(music)
+
+col.names <- colnames(music)
+col.names <- col.names[-1]
+col.names <- tolower(col.names)
+col.names <- c("rank", col.names)
+colnames(music) <- col.names
+
+#check work
+str(music)
+
+
+#add spotify data
+filename = "bb_spotify.csv"
+spotify <- read.csv(filename, sep=",", header=T, na.string=c(""), stringsAsFactors=F)
+
+head(spotify)
+#remove first row
+spotify <- spotify[-1,]
+
+str(spotify)
+```
+
+The lyrics were transformed into word frequency matrix. The analyze will be looking at how often a word appears in the lyrics. In order to make meaninful analyze, all words were transformed to lower case and all stop-words (commonly used words) were removed. Additionally, all punctuations and numbers were removed. The data frames shows for each songs how frequent a word appears in that song, with the rows being songs and columns being words.
+
+``` {r lyrics word frequency matrix}
+lyrics <- c(lyrics = music$lyrics)
+
+corpus <- Corpus(VectorSource(lyrics))
+  # remove punctuation
+cleancorpus <- tm_map(corpus, removePunctuation)
+  # change to lower case
+cleancorpus <- tm_map(cleancorpus, content_transformer(tolower))
+  # remove numbers
+cleancorpus <- tm_map(cleancorpus, removeNumbers)
+  # remove whitespace
+cleancorpus <- tm_map(cleancorpus, stripWhitespace)
+  # remove stop words
+stop <- stopwords("english")
+stop <- Corpus(VectorSource(stop))
+stop <- suppressMessages(tm_map(stop, removePunctuation))
+stop <- unlist(stop)
+cleancorpus <- tm_map (cleancorpus, removeWords, stop)
+
+tdm <- TermDocumentMatrix(cleancorpus)
+
+lyrics <- as.matrix(tdm)
+  #change to data frame
+lyrics <- as.data.frame(lyrics)
+lyrics <- as.data.frame(t(lyrics))
+
+# look at results
+  lyrics[1:7,1:7]
+
+  #change row names
+rownames(lyrics) <- c(1:5100)
+```
+
+Combining the data into one
+
+``` {R combine data}
+index <- grep("featuring", music$artist) +1
+
+featuring <- replicate(5100, 0)
+featuring[index] = 1
+
+df <- data.frame(rank = music$rank,
+                 danceability = spotify$danceability,
+                 energy = spotify$energy,
+                 loudness = spotify$loudness,
+                 speechiness = spotify$speechiness,
+                 acousticness = spotify$acousticness,
+                 instrmentalness = spotify$instrumentalness,
+                 liveness = spotify$liveness,
+                 tempo = spotify$temp,
+                 duration = spotify$duration_ms,
+                 girl = lyrics$girl,
+                 love = lyrics$love, 
+                 ooh = lyrics$ooh,
+                 want = lyrics$want,
+                 baby = lyrics$baby,
+                 yeah = lyrics$yeah,
+                 back = lyrics$back,
+                 cause = lyrics$cause,
+                 thing = lyrics$thing,
+                 stringsAsFactors = F)
+
+for (column in 1:length(colnames(df))) {
+  df[,column] <- as.numeric(df[,column])
+}
+
+str(df)
+
+#remove NA
+df <- df[-which(is.na(df$danceability)),]
+```
+
+```{r clustering}
+scaled.data <- as.matrix(scale(df))
+set.seed(123)
+fviz_nbclust(scaled.data, kmeans, method="wss")
+
+cluster <- kmeans(df, 2)
+
+cluster.output <- data.frame(df,
+                             cluster$cluster)
+
+clusplot(df, cluster$cluster,
+         color=T,
+         shade=T,
+         labels=0,
+         lines=0)
+
+write.csv(cluster.output, file="Cluster Combined Results.csv")
+```
+
+``` {r regression}
+summary(lm(rank~., df))
+```
+
+```{r logit}
+top10 <- c()
+
+for (row in 1:length(rownames(df))) {
+  if (df$rank[row] <= 10) {
+    top10 <- c(top10, 1)
+  } else {
+    top10 <- c(top10, 0)
+  }
+}
+
+table(top10)
+
+
+df.logit <- data.frame(rank = music$rank,
+                 year = music$year,
+                 danceability = spotify$danceability,
+                 energy = spotify$energy,
+                 loudness = spotify$loudness,
+                 speechiness = spotify$speechiness,
+                 acousticness = spotify$acousticness,
+                 instrmentalness = spotify$instrumentalness,
+                 liveness = spotify$liveness,
+                 tempo = spotify$temp,
+                 duration = spotify$duration_ms,
+                 girl = lyrics$girl,
+                 love = lyrics$love, 
+                 ooh = lyrics$ooh,
+                 want = lyrics$want,
+                 baby = lyrics$baby,
+                 yeah = lyrics$yeah,
+                 back = lyrics$back,
+                 cause = lyrics$cause,
+                 thing = lyrics$thing,
+                 stringsAsFactors = F)
+
+for (column in 1:length(colnames(df.logit))) {
+  df.logit[,column] <- as.numeric(df.logit[,column])
+}
+
+str(df.logit)
+#remove NA
+df.logit <- df.logit[-which(is.na(df.logit$danceability)),]
+df.logit <- data.frame(df.logit,
+                       top10)
+df.logit$top10 <- as.factor(df.logit$top10)
+
+test <- df.logit[which(df.logit$year == 2015),
+                 -which(colnames(df.logit) == "year")]
+  actual <- df.logit[which(df.logit$year == 2015),
+                 which(colnames(df.logit) == "top10")]
+train <- df.logit[which(df.logit$year != 2015),
+                 -which(colnames(df.logit) == "year")]
+
+logit.model <- glm(top10~., train, family=binomial(link="logit"))
+prediction <- predict(logit.model, test, type="response")
+
+results <- c()
+for (number in 1:length(prediction)) {
+  if (prediction[number] > 0.5) {
+    results <- c(results,1)
+  } else {
+    results <- c(results,0)
+  }
+}
+
+table(results,actual)
+```
+
+```{r limit years}
+df <- data.frame(rank = music$rank,
+                 year = music$year,
+                 danceability = spotify$danceability,
+                 energy = spotify$energy,
+                 loudness = spotify$loudness,
+                 speechiness = spotify$speechiness,
+                 acousticness = spotify$acousticness,
+                 instrmentalness = spotify$instrumentalness,
+                 liveness = spotify$liveness,
+                 tempo = spotify$temp,
+                 duration = spotify$duration_ms,
+                 girl = lyrics$girl,
+                 love = lyrics$love, 
+                 ooh = lyrics$ooh,
+                 want = lyrics$want,
+                 baby = lyrics$baby,
+                 yeah = lyrics$yeah,
+                 back = lyrics$back,
+                 cause = lyrics$cause,
+                 thing = lyrics$thing,
+                 stringsAsFactors = F)
+
+for (column in 1:length(colnames(df))) {
+  df[,column] <- as.numeric(df[,column])
+}
+
+str(df)
+
+#remove NA
+df <- df[-which(is.na(df$danceability)),]
+
+limit5 <- df[which(df$year > 2010),
+             -which(colnames(df) == "year")]
+limit7 <- df[which(df$year > 2008),
+             -which(colnames(df) == "year")]
+limit10 <- df[which(df$year > 2004),
+             -which(colnames(df) == "year")]
+  
+#regression
+summary(lm(rank~., limit5))
+summary(lm(rank~., limit7))
+summary(lm(rank~., limit10))
+```

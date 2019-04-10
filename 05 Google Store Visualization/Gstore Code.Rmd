@@ -1,0 +1,496 @@
+---
+title: "Gstore Code"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+date: "December 17, 2018"
+---
+
+#Librarys
+```{r}
+suppressPackageStartupMessages(library(data.table))
+library(jsonlite)
+library(readr)
+suppressPackageStartupMessages(library(dplyr))
+library(tidyr)
+suppressPackageStartupMessages(library(magrittr))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(purrr))
+library(ggplot2)
+suppressPackageStartupMessages(library(gridExtra))
+library(countrycode)
+library(ggExtra)
+suppressPackageStartupMessages(library(ggmap))
+library(ggalt)
+suppressPackageStartupMessages(library(maps))
+suppressPackageStartupMessages(library(ggpubr))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(plyr))
+library(fmsb)
+```
+
+#Import Data & Cleansing
+No imprt the the dataset, add the csv file to the same folder where this markdown is located. No paths necessary. 
+
+```{r}
+#Upload Google Store Dataset
+filename = "train.csv"
+gstore <- read.csv(filename, sep = ",", header=TRUE, stringsAsFactors = F)
+
+#View(gstore)
+
+#### Data Preprocessing ####
+
+#Flatten JSON into separate df columns
+tr_device <- paste("[", paste(gstore$device, collapse = ","), "]") %>% fromJSON(flatten = T)
+tr_geoNetwork <- paste("[", paste(gstore$geoNetwork, collapse = ","), "]") %>% fromJSON(flatten = T)
+tr_totals <- paste("[", paste(gstore$totals, collapse = ","), "]") %>% fromJSON(flatten = T)
+tr_trafficSource <- paste("[", paste(gstore$trafficSource, collapse = ","), "]") %>% fromJSON(flatten = T)
+
+gstore <- cbind(gstore, tr_device, tr_geoNetwork, tr_totals, tr_trafficSource) %>%
+  as.data.table()
+
+# drop the old json columns
+gstore[, c('device', 'geoNetwork', 'totals', 'trafficSource') := NULL]
+
+# values to convert to NA
+na_vals <- c('unknown.unknown', '(not set)', 'not available in demo dataset', 
+             '(not provided)', '(none)', '<NA>')
+
+for(col in names(gstore)) {
+  
+  set(gstore, i=which(gstore[[col]] %in% na_vals), j=col, value=NA)
+  
+}
+
+# get number of unique values in each column
+unique <- sapply(gstore, function(x) { length(unique(x[!is.na(x)])) })
+
+# subset to == 1
+one_val <- names(unique[unique <= 1])
+
+# but keep bounces and newVisits
+one_val = setdiff(one_val, c('bounces', 'newVisits'))
+
+# drop columns from gstore
+gstore[, (one_val) := NULL]
+
+# character columns to convert to numeric
+num_cols <- c('hits', 'pageviews', 'bounces', 'newVisits',
+              'transactionRevenue')
+
+# change columns to numeric
+gstore[, (num_cols) := lapply(.SD, as.numeric), .SDcols=num_cols]
+
+#Divide transactionRevenue by 1,000,000
+gstore[, transactionRevenue := transactionRevenue / 1e+06]
+
+
+summary(gstore$transactionRevenue)
+
+#Isolate only rows that don't have NA for transaction revenue
+gtransactions <- gstore %>% drop_na(transactionRevenue)
+
+head(gtransactions)
+
+summary(gtransactions$transactionRevenue)
+gtransactions$newVisits[which(is.na(gtransactions$newVisits))] = 0
+```
+
+#Key Visual: Map
+```{r}
+gtransactions$date <- as.Date(as.character(gtransactions$date), format='%Y%m%d')
+gtransactions$week_date<-weekdays(gtransactions$date)
+
+us<-gtransactions[which(gtransactions$country=='United States'),]
+
+rev_week_region <- aggregate(transactionRevenue ~ region + week_date, data = us, mean)
+  rev_week_region$week_date <- factor(rev_week_region$week_date, 
+                                         ordered=T,
+                                         levels=c("Sunday",
+                                                  "Monday",
+                                                  "Tuesday",
+                                                  "Wednesday",
+                                                  "Thursday",
+                                                  "Friday",
+                                                  "Saturday"))
+
+rev_week_region$region<-tolower((rev_week_region$region))
+#library(usmap)
+us<-map_data('state')
+us_state<-aggregate(us[, 0:2], list(us$region), mean)
+us_data<- merge(rev_week_region, us_state, by.x = "region", by.y = "Group.1")
+for (row in 1:nrow(us_data)) {
+    if(us_data[row, "week_date"] == "Sunday") {
+    us_data[row, "lat"]=us_data[row, "lat"] -.5
+    }
+    else if (us_data[row, "week_date"] == "Monday"){
+    us_data[row, "lat"]=us_data[row, "lat"] -1
+    }
+    else if (us_data[row, "week_date"] == "Tuesday"){
+    us_data[row, "long"]=us_data[row, "long"] +1
+    }
+    else if (us_data[row, "week_date"] == "Wednesday"){
+    us_data[row, "long"]=us_data[row, "long"] +2
+    }
+    else if (us_data[row, "week_date"] == "Thursday"){
+    us_data[row, "long"]=us_data[row, "long"] +1
+    us_data[row, "lat"]=us_data[row, "lat"] -.5
+    }
+    else if (us_data[row, "week_date"] == "Friday"){
+    us_data[row, "long"]=us_data[row, "long"] +2
+    us_data[row, "lat"]=us_data[row, "lat"] -.5
+    }
+}
+ggplot() + geom_polygon(data=us, aes(x=long, y=lat, group = group),color="white", fill="grey92" )+
+geom_point(data=us_data, aes(x=long, y=lat, size = transactionRevenue, colour=week_date)) +
+scale_colour_manual(values = c("#FFFA93", "#FFA5D2", "#FF208C","#C11766","#7F1144","#FFF100","#B5A600")) +
+scale_size(name="", range = c(2, 15)) +
+guides(size=guide_legend("Txn Revenue")) +
+theme_void()
+```
+
+##Data Descriptive Plots: By Region
+###Northeast
+```{r}
+region.ne <- c("Connecticut", "Maine", "Massachusetts", "New Hampshire", "Rhode Island", "Vermont", "New Jersey", "New York", "Pennsylvania")
+sub.index <- which(gtransactions$region == region.ne)
+northeast <- gtransactions[sub.index,]
+
+## ----- Conversion Rate by Device
+# create count web visits and transactions by device
+t1<-northeast %>%
+  group_by(northeast$deviceCategory) %>%
+  dplyr::summarise( CG = n())
+colnames(t1) <- c("x","freq")
+
+sub.index <- which(gstore$region == region.ne)
+ne.whole <- gstore[sub.index,]
+v1<-ne.whole %>%
+  group_by(ne.whole$deviceCategory) %>%
+  dplyr::summarise( CG = n())
+colnames(v1) <- c("x","freq")
+
+#Merge both tables by device Category type
+tv1 <- merge(t1,v1,by="x")
+#Create conversion rate by dividing transaction devices by all devices
+tv1$ConversionRate <- (tv1$freq.x / tv1$freq.y) * 100
+#Plot conversion rate
+ggplot(tv1, aes(x = x, y = ConversionRate)) +
+  geom_col() +
+  geom_text(
+    aes(label = sprintf("%.2f %%", ConversionRate), y = ConversionRate + 0.05),
+    position = position_dodge(0.9),
+    vjust = 0
+  ) +
+  labs(title="Conversion Rate by Device Category - Northeast") +
+  ylab("Conversion Rate") +
+  xlab("Device Category") + 
+  scale_y_continuous(limits=c(0,10)) +
+  theme_minimal()
+
+## ----- Bounce by Channel Group
+#number of visits that ended in a bounce by channelGrouping
+northeast1 <- subset(ne.whole, bounces ==1)
+v2<-northeast1 %>%
+  group_by(northeast1$channelGrouping) %>%
+  dplyr::summarise( CG = n())
+colnames(v2) <- c("x","freq")
+v3<-ne.whole %>%
+  group_by(ne.whole$channelGrouping) %>%
+  dplyr::summarise( CG = n())
+colnames(v3) <- c("x","freq")
+#Merge both tables by Channel Grouping type
+vv1 <- merge(v2,v3,by="x")
+#Create conversion rate by dividing bounces by all visits by channel group
+vv1$bounceRate<- (vv1$freq.x / vv1$freq.y) * 100
+#Plot bounce rate
+ggplot(vv1, aes(x = x, y = bounceRate)) +
+  geom_col() +
+  geom_text(
+    aes(label = sprintf("%.2f %%", bounceRate), y = bounceRate + 0.05),
+    position = position_dodge(0.9),
+    vjust = 0
+  ) +
+  labs(title="bounce Rate by Channel Category") +
+  ylab("bounce Rate") +
+  xlab("Channel Group") +
+  scale_y_continuous(limits=c(0,100)) +
+  theme_minimal()
+```
+
+
+### South
+```{r}
+region.s <- c("Delaware", "Florida", "Georgia", "Maryland", "North Carolina", "South Carolina", "Virginia", "District of Columbia", "West Virginia", "Alabama", "Kentucky", "Mississippi", "Tennessee", "Arkansas", "Louisiana", "Oklahoma", "Texas")
+sub.index <- which(gtransactions$region == region.s)
+south <- gtransactions[sub.index,]
+
+  ##Conversion Rate
+# create count web visits and transactions by device
+t1<-south %>%
+  group_by(south$deviceCategory) %>%
+  dplyr::summarise( CG = n())
+colnames(t1) <- c("x","freq")
+
+sub.index <- which(gstore$region == region.s)
+s.whole <- gstore[sub.index,]
+v1<-s.whole %>%
+  group_by(s.whole$deviceCategory) %>%
+  dplyr::summarise( CG = n())
+colnames(v1) <- c("x","freq")
+
+#Merge both tables by device Category type
+tv1 <- merge(t1,v1,by="x")
+#Create conversion rate by dividing transaction devices by all devices
+tv1$ConversionRate <- (tv1$freq.x / tv1$freq.y) * 100
+#Plot conversion rate
+ggplot(tv1, aes(x = x, y = ConversionRate)) +
+  geom_col() +
+  geom_text(
+    aes(label = sprintf("%.2f %%", ConversionRate), y = ConversionRate + 0.05),
+    position = position_dodge(0.9),
+    vjust = 0
+  ) +
+  labs(title="Conversion Rate by Device Category - South") +
+  ylab("Conversion Rate") +
+  xlab("Device Category") +
+  scale_y_continuous(limits=c(0,10)) +
+  theme_minimal()
+
+## ----- Bounce by Channel Group
+#number of visits that ended in a bounce by channelGrouping
+south1 <- subset(s.whole, bounces ==1)
+v2<-south1 %>%
+  group_by(south1$channelGrouping) %>%
+  dplyr::summarise( CG = n())
+colnames(v2) <- c("x","freq")
+v3<-s.whole %>%
+  group_by(s.whole$channelGrouping) %>%
+  dplyr::summarise( CG = n())
+colnames(v3) <- c("x","freq")
+#Merge both tables by Channel Grouping type
+vv1 <- merge(v2,v3,by="x")
+#Create conversion rate by dividing bounces by all visits by channel group
+vv1$bounceRate<- (vv1$freq.x / vv1$freq.y) * 100
+#Plot bounce rate
+ggplot(vv1, aes(x = x, y = bounceRate)) +
+  geom_col() +
+  geom_text(
+    aes(label = sprintf("%.2f %%", bounceRate), y = bounceRate + 0.05),
+    position = position_dodge(0.9),
+    vjust = 0
+  ) +
+  labs(title="bounce Rate by Channel Category") +
+  ylab("bounce Rate") +
+  xlab("Channel Group") +
+  scale_y_continuous(limits=c(0,100)) +
+  theme_minimal()
+```
+
+### Midwest
+```{r}
+region.mw <- c("Illinois", "Indiana", "Michigan", "Ohio", "Wisconsin", "Iowa", "Kansas", "Minnesota", "Missouri", "Nebraska", "North Dakota", "South Dakota")
+sub.index <- which(gtransactions$region == region.mw)
+midwest <- gtransactions[sub.index,]
+
+  #Conversion Rate
+# create count web visits and transactions by device
+t1<- midwest %>%
+  group_by(midwest$deviceCategory) %>%
+  dplyr::summarise( CG = n())
+colnames(t1) <- c("x","freq")
+
+sub.index <- which(gstore$region == region.mw)
+mw.whole <- gstore[sub.index,]
+v1<-mw.whole %>%
+  group_by(mw.whole$deviceCategory) %>%
+  dplyr::summarise( CG = n())
+colnames(v1) <- c("x","freq")
+
+#Merge both tables by device Category type
+tv1 <- merge(t1,v1,by="x")
+#Create conversion rate by dividing transaction devices by all devices
+tv1$ConversionRate <- (tv1$freq.x / tv1$freq.y) * 100
+#Plot conversion rate
+ggplot(tv1, aes(x = x, y = ConversionRate)) +
+  geom_col() +
+  geom_text(
+    aes(label = sprintf("%.2f %%", ConversionRate), y = ConversionRate + 0.05),
+    position = position_dodge(0.9),
+    vjust = 0
+  ) +
+  labs(title="Conversion Rate by Device Category - Midwest") +
+  ylab("Conversion Rate") +
+  xlab("Device Category") +
+  scale_y_continuous(limits=c(0,10)) +
+  theme_minimal()
+
+## ----- Bounce by Channel Group
+#number of visits that ended in a bounce by channelGrouping
+midwest1 <- subset(mw.whole, bounces ==1)
+v2<-midwest1 %>%
+  group_by(midwest1$channelGrouping) %>%
+  dplyr::summarise( CG = n())
+colnames(v2) <- c("x","freq")
+v3<-mw.whole %>%
+  group_by(mw.whole$channelGrouping) %>%
+  dplyr::summarise( CG = n())
+colnames(v3) <- c("x","freq")
+#Merge both tables by Channel Grouping type
+vv1 <- merge(v2,v3,by="x")
+#Create conversion rate by dividing bounces by all visits by channel group
+vv1$bounceRate<- (vv1$freq.x / vv1$freq.y) * 100
+#Plot bounce rate
+ggplot(vv1, aes(x = x, y = bounceRate)) +
+  geom_col() +
+  geom_text(
+    aes(label = sprintf("%.2f %%", bounceRate), y = bounceRate + 0.05),
+    position = position_dodge(0.9),
+    vjust = 0
+  ) +
+  labs(title="bounce Rate by Channel Category") +
+  ylab("bounce Rate") +
+  xlab("Channel Group") +
+  scale_y_continuous(limits=c(0,100)) +
+  theme_minimal()
+```
+
+### West
+```{r}
+region.w <- c("Arizona", "Colorado", "Idaho", "Montana", "Nevada", "New Mexico", "Utah", "Wyoming", "Alaska", "California", "Hawaii", "Oregon", "Washington")
+sub.index <- which(gtransactions$region == region.w)
+west <- gtransactions[sub.index,]
+
+  ## Conversion Rate
+# create count web visits and transactions by device
+t1<-west %>%
+  group_by(west$deviceCategory) %>%
+  dplyr::summarise( CG = n())
+colnames(t1) <- c("x","freq")
+
+sub.index <- which(gstore$region == region.w)
+w.whole <- gstore[sub.index,]
+v1<-w.whole %>%
+  group_by(w.whole$deviceCategory) %>%
+  dplyr::summarise( CG = n())
+colnames(v1) <- c("x","freq")
+
+#Merge both tables by device Category type
+tv1 <- merge(t1,v1,by="x")
+#Create conversion rate by dividing transaction devices by all devices
+tv1$ConversionRate <- (tv1$freq.x / tv1$freq.y) * 100
+#Plot conversion rate
+ggplot(tv1, aes(x = x, y = ConversionRate)) +
+  geom_col() +
+  geom_text(
+    aes(label = sprintf("%.2f %%", ConversionRate), y = ConversionRate + 0.05),
+    position = position_dodge(0.9),
+    vjust = 0
+  ) +
+  labs(title="Conversion Rate by Device Category - West") +
+  ylab("Conversion Rate") +
+  xlab("Device Category") +
+  scale_y_continuous(limits=c(0,10)) +
+  theme_minimal()
+
+## ----- Bounce by Channel Group
+#number of visits that ended in a bounce by channelGrouping
+west1 <- subset(w.whole, bounces ==1)
+v2<-west1 %>%
+  group_by(west1$channelGrouping) %>%
+  dplyr::summarise( CG = n())
+colnames(v2) <- c("x","freq")
+v3<-w.whole %>%
+  group_by(w.whole$channelGrouping) %>%
+  dplyr::summarise( CG = n())
+colnames(v3) <- c("x","freq")
+#Merge both tables by Channel Grouping type
+vv1 <- merge(v2,v3,by="x")
+#Create conversion rate by dividing bounces by all visits by channel group
+vv1$bounceRate<- (vv1$freq.x / vv1$freq.y) * 100
+#Plot bounce rate
+ggplot(vv1, aes(x = x, y = bounceRate)) +
+  geom_col() +
+  geom_text(
+    aes(label = sprintf("%.2f %%", bounceRate), y = bounceRate + 0.05),
+    position = position_dodge(0.9),
+    vjust = 0
+  ) +
+  labs(title="bounce Rate by Channel Category") +
+  ylab("bounce Rate") +
+  xlab("Channel Group") +
+  scale_y_continuous(limits=c(0,100)) +
+  theme_minimal()
+```
+
+##Other Descriptive Plots
+```{r}
+theme_set(theme_bw())
+ggplot(data = gtransactions, aes(date, transactionRevenue/1000)) + 
+  geom_line(color = 'steelblue') +
+  labs(
+    x='',
+    y='Revenue (000s)',
+    title='Daily Revenue'
+  ) +
+  theme_minimal()
+```
+
+##Supporting Visuals
+```{r}
+####Does the way in which the customer reaches the website matter? How?####
+
+#Create count tables of each type of channel for all web visits and just transaction visits
+d <- count(gtransactions$deviceCategory)
+dc <- count(gstore$deviceCategory)
+
+#Merge both tables by channel type
+ddc <- merge(d,dc,by="x")
+
+#Create conversion rate by dividing transaction channels by all channels
+ddc$ConversionRate <- (ddc$freq.x / ddc$freq.y) * 100
+ddc
+
+####Does the way in which the customer reaches the website matter? How?####
+
+#Create count tables of each type of channel for all web visits and just transaction visits
+t <- count(gtransactions$channelGrouping)
+v <- count(gstore$channelGrouping)
+
+#Merge both tables by channel type
+tv <- merge(t,v,by="x")
+
+#Create conversion rate by dividing transaction channels by all channels
+tv$ConversionRate <- (tv$freq.x / tv$freq.y) * 100
+tv
+
+#Create Conversion Rates Table
+ConversionRates <- rbind(ddc,tv)
+ConversionRates <-  subset(ConversionRates, select = -c(freq.x,freq.y))
+
+ConversionRates <- ConversionRates %>%
+  remove_rownames() %>%
+  column_to_rownames(var = 'x')
+
+ConversionRates <- t(ConversionRates)
+ConversionRates <- data.frame(ConversionRates)
+
+ConversionRates1=rbind(rep(6,11) , rep(0,11) , ConversionRates)
+
+names(ConversionRates1) <- c("Desktop", "Mobile","Tablet","Other","Affiliates","Direct","Display","Organic Search","Paid Search","Referral","Social")
+
+# Radar Chart of Channels and Devices
+colors_border=c( rgb(0.2,0.5,0.5,0.9), rgb(0.8,0.2,0.5,0.9) , rgb(0.7,0.5,0.1,0.9) )
+colors_in=c( rgb(0.2,0.5,0.5,0.4), rgb(0.8,0.2,0.5,0.4) , rgb(0.7,0.5,0.1,0.4) )
+radarchart(ConversionRates1, axistype=1 ,
+            #custom polygon
+            pcol=colors_border , pfcol=colors_in , plwd=2 , plty=1,
+            #custom the grid
+            seg=6, cglcol="grey", cglty=1, axislabcol="black",caxislabels=c("0%","1%","2%","3%","4%","5%","6%"),cglwd=0.8,calcex=.8,
+            #custom labels
+            vlcex=0.8, title="Conversion Rate by Devices and Channel Source"
+)
+```

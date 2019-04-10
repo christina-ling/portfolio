@@ -1,0 +1,848 @@
+---
+title: "Mass Shootings"
+author: "Christina Ling"
+date: "April 10, 2019"
+output: html_document
+---
+
+```{r}
+
+
+# ------- libraries ---------
+
+#install.packages("stringr")
+library("stringr")
+
+#install.packages("readxl")
+library("readxl")
+
+#install.packages("tibble")
+library("tibble") 
+
+#install.packages("lubridate")
+library("lubridate")
+
+#install.packages("tidyr")
+library("tidyr")
+
+#install.packages("ggmap")
+library("ggmap")
+
+#install.packages("modeest")
+library("modeest")
+
+#install.packages("moments")
+library("moments")
+
+#install.packages("ggplot2")
+library("ggplot2")
+
+#install.packages("dpylr")
+library("dplyr")
+
+#install.packages("gridExtra")
+library("gridExtra")
+
+#install.packages("arules")
+library("arules")
+
+#install.packages("arulesViz")
+#install.packages("whisker")
+#install.packages("robustbase")
+#install.packages("trimcluster")
+#install.packages("viridis")
+library("arulesViz")
+
+#install.packages("e1071")
+library("e1071")
+
+#install.packages("tm")
+library("tm")
+
+#install.packages("wordcloud")
+library("wordcloud")
+
+# -------- import data ---------
+filename = "Mass Shootings.txt"
+df <- read.delim(filename,
+                 sep="\t", 
+                 header=TRUE,
+                 fill=TRUE,
+                 na.string=c(""),
+                 stringsAsFactors = FALSE)
+
+df
+
+
+# ------ data cleanse ---------
+
+  # remove column S# column
+df <- df[,-1] 
+df 
+
+  #look at structure of data
+str(df)
+
+#Date Column
+  #remove time from date
+df$Date <- as.Date(df$Date, format = "%m/%d/%Y")
+
+#Open/Close Location Column
+  #look at all responses
+unique(df$Open.Close.Location)
+  #change to consistent lower cases
+df$`Open/Close Location` <- tolower(df$Open.Close.Location)
+  #change to factor
+df$`Open/Close Location` <- as.factor(df$Open.Close.Location)
+
+#Target Column
+  #look at all responses
+unique(df$Target)
+  #change to consistent lower cases
+df$Target <- tolower(df$Target)
+  #change and symbols to consistent symbol
+df$Target <- gsub("ex-wife & family", "ex-wife+family", df$Target)
+df$Target <- gsub("ex-girlfriend & family", "ex-girlfriend+family", df$Target)
+
+#Cause Column
+  #look at all responses
+unique(df$Cause)
+  #fill in NAs with Unknown
+df$Cause[is.na(df$Cause)] <- "unknown"
+  #change to consistent lower cases
+df$Cause <- tolower(df$Cause)
+
+#Age Column
+  #look at all responses
+unique(df$Age)
+
+# Employeed (Y/N) Column
+  #fill in NAs with 0
+df$Employeed..Y.N.[is.na(df$`Employeed (Y/N)`)] <- 0
+  #change structure to factor, Y/N (1/0)
+df$Employeed..Y.N.<- as.factor(df$Employeed..Y.N.)
+
+#Mental Health Issues Column
+  #look at all responses
+unique(df$Mental.Health.Issues)
+  #consistent captalization
+df$Mental.Health.Issues <- gsub("unknown", "Unknown", df$Mental.Health.Issues)
+  #change to factor
+df$Mental.Health.Issues <- as.factor(df$Mental.Health.Issues) 
+
+#Race Column
+  #look at all responses
+unique(df$Race)
+  #change to consistent wording between rows
+df$Race <- gsub("Black American or African American", "Black", df$Race) 
+df$Race <- gsub("White American or European American", "White", df$Race) 
+  #fill NAs with unknown
+df$Race[is.na(df$Race)] <- "Unknown"
+df$Race <- gsub("Some other race", "Other", df$Race) 
+  #captilization fixing
+df$Race <- gsub("black", "Black", df$Race) 
+df$Race <- gsub("white","White",df$Race) 
+  #change to consistent wording between rows
+df$Race <- gsub("Two or more races", "Mix", df$Race)
+df$Race <- gsub("Black/Unknown", "Black", df$Race)
+df$Race <- gsub("White/Some other Race", "White", df$Race)
+df$Race <- gsub("Asian American/Other", "Asian", df$Race)
+df$Race <- gsub("Native American or Alaska ative", "Native American", df$Race)
+df$Race <- gsub("asian american", "asian", df$Race)
+  #captilization fixing
+df$Race <- tolower(df$Race)
+  #change to factor
+df$Race <- as.factor(df$Race)
+
+#Gender Column
+  #look at all responses
+unique(df$Gender)
+  #Change and symbols for consistency
+df$Gender <- gsub("M/F", "M+F", df$Gender)
+df$Gender <- gsub("Male/Female","M+F", df$Gender) 
+  #change to consistent wording between rows
+df$Gender <- gsub("Male", "M", df$Gender) 
+df$Gender <- gsub("Female","F", df$Gender) 
+  #change to factor
+df$Gender <- as.factor(df$Gender) 
+
+# ------- adding data to complete the set
+#adding missing locations
+df[16,2] <- "Forestville, Maryland"
+df[17, 2] <- "Halifax County, VA"
+df[18,2] <- "Baltimore, MD"
+df[19,2] <- "Chicago, IL"
+df[20,2] <- "Houston, Texas"
+df[21,2] <- "Blountsville, AL"
+df[22,2] <- "Long Beach, CA"
+df[23,2] <- "Albuquerque, NM"
+df[24,2] <- "Memphis, TN"
+df[25,2] <- "Chicago, IL"
+df[26,2] <- "Albuquerque, NM"
+df[30,2] <- "Greenhill, AL"
+df[35,2] <- "Atlanta, GA"
+df[36,2] <- "Fort Myers, FL"
+df[37,2] <- "Elberton, Georgia"
+df[38,2] <- "Trenton, NJ"
+df[39,2] <- "Detroit, MI"
+df[41,2] <- "Wilkinsburg, PA"
+df[42,2] <- "Kansas City, Kansas"
+df[43,2] <- "Lafayette, LA"
+df[44,2] <- "Kansas City, Kansas"
+df[46,2] <- "Roswell, GA"
+df[47,2] <- "Wichita, Kansas"
+df[48,2] <- "Detroit, MI"
+df[49,2] <- "Riverside, CA"
+df[54,2] <- "Belfair, WA"
+df[56,2] <- "Hazelwood, MO"
+df[57,2] <- "Houston, Texas"
+df[60,2] <- "Tampa, FL"
+df[61,2] <- "Kalamazoo, MI"
+df[62,2] <- "Vallejo, CA"
+df[63,2] <- "Muskegon, MI"
+df[65,2] <- "Rochester, NY"
+df[66,2] <- "Tampa, FL"
+df[67,2] <- "Los Angeles, CA"
+df[68,2] <- "Uvalde, TX "
+df[69,2] <- "New Orleans, LA"
+df[70,2] <- "Glendale, AZ"
+df[71,2] <- "Bowling Green, VA"
+df[73,2] <- "Perris, CA"
+df[74,2] <- "Crestview, FL"
+df[75,2] <- "Los Angeles, California"
+df[76,2] <- "Gloucester County, VA"
+df[77,2] <- "Wilmington, DE"
+df[78,2] <- "Memphis, Tennessee"
+df[79,2] <- "Lakeland, Florida"
+ 
+#Location Column
+  # investigate & fix error
+df[147,2] 
+df$Location <- gsub("Pennsburg, Souderton, Lansdale, Harleysville, Pennsylvania", "Momtomery County, Pennsylvainia", df$Location)
+df[176,2] 
+df$Location <- gsub("South Valley, Albuquerque, New Mexico", "South Valley, New Mexico", df$Location)
+df[225,2]
+df$Location <- gsub("Nickel Mines, Lancaster, Pennsylvania", "Lancaster, Pennsylvania", df$Location)
+df[241,2]
+df$Location <- gsub("Santee, San Diego, California", "San Diego, California", df$Location)
+  # add column: city and state
+  #separating into City and State
+Location <- separate(df, Location, c("City","State"), sep = ",", remove=FALSE)
+df<-Location
+
+#State Column
+unique(df$State)
+  #change State to full name
+df$State <- gsub("TX", "Texas", df$State)
+df$State <- gsub("CO", "Colorado", df$State)
+df$State <- gsub("MD", "Maryland", df$State)
+df$State <- gsub("NV", "Nevada", df$State)
+df$State <- gsub("CA", "California", df$State)
+df$State <- gsub("PA", "Pennsylvania", df$State)
+df$State <- gsub("WA", "Washington", df$State)
+df$State <- gsub("LA", "Louisianna", df$State)
+df$State <- gsub("VA", "virginia", df$State)
+df$State <- gsub("IL", "Illinois", df$State)
+df$State <- gsub("AL", "Alamaba", df$State)
+df$State <- gsub("NM", "New Mexico", df$State)
+df$State <- gsub("TN", "Tennessee", df$State)
+df$State <- gsub("GA", "Georgia", df$State)
+df$State <- gsub("FL", "Florida", df$State)
+df$State <- gsub("NJ", "New Jersey", df$State)
+df$State <- gsub("MI", "Michigan", df$State)
+df$State <- gsub("MO", "Missouri", df$State)
+df$State <- gsub("AZ", "Arizona", df$State)
+df$State <- gsub("DE", "Delaware", df$State)
+df$State <- gsub("NY", "New York", df$State)
+df$State <- gsub(" ", "", df$State)
+df$State <- gsub("NorthCarolina", "North Carolina", df$State)
+df$State <- gsub("SouthDakota", "South Dakota", df$State)
+df$State <- gsub("NewYork", "New York", df$State)
+df$State <- gsub("SouthCarolina", "South Carolina", df$State)
+df$State <- gsub("NewJersey", "New Jersey", df$State)
+df$State <- gsub("NewMexico", "New Mexico", df$State)
+df$State <- gsub("WestVirginia", "West Virginia", df$State)
+  #correcting spelling
+df$State <- gsub("pennsylvirginiania", "pennsylvania", df$State)
+  #lower case
+df$City <- tolower(df$City)
+df$State <- tolower(df$State)
+
+
+
+
+#---------Descriptive Statistics ---------
+summary(df)
+  #Fatalities
+fatalities <- df[complete.cases(df$Fatalities),11]
+fatalities <- c(fatalities)
+fatalities <-unlist(fatalities)
+
+skewness(fatalities)
+var(fatalities)
+sd(fatalities)
+mfv(fatalities)
+hist(fatalities)
+
+  #injured
+injured <- df[complete.cases(df$Injured),12]
+injured <- c(injured)
+injured <- unlist(injured)
+
+skewness(injured)
+var(injured)
+sd(injured)
+mfv(injured)
+hist(injured)
+
+  #Total Victims
+victims <- df[complete.cases(df$Total.victims),13]
+victims <- c(victims)
+victims <- unlist(victims)
+
+skewness(victims)
+var(victims)
+sd(victims)
+mfv(victims)
+hist(victims)
+
+  #Policeman Killed
+
+police <- df[complete.cases(df$Policeman.Killed),14]
+police <- c(police)
+police <- unlist(police)
+
+skewness(police)
+var(police)
+sd(police)
+mfv(police)
+hist(police)
+
+
+#Calculating days between shootings
+length(df$Date)
+date1 <- df$Date[-323]
+date2 <- df$Date[-1]
+daysbetween <- difftime(date1, date2, units=c("days"))
+daysbetween <- as.numeric(daysbetween)
+
+summary(daysbetween)
+skewness(daysbetween)
+var(daysbetween)
+sd(daysbetween)
+mfv(daysbetween)
+
+hist.days <- hist(daysbetween)
+
+#percent of victims killed
+percent.kill <- (df$Fatalities/df$Total.victims)*100
+
+summary(percent.kill)
+skewness(percent.kill)
+var(percent.kill)
+sd(percent.kill)
+mfv(percent.kill)
+
+hist.percent <- hist(percent.kill)
+
+# hypothesis test
+  #compare recent to old
+time <- year(df$Date)
+time
+
+  #shooting within the last 10 years
+recent <- data.frame(df,time)
+recent <- recent[recent$time > 2007,]
+  #shooting that happened more than 10 years ago
+old <- data.frame(df,time)
+old <- old[old$time <= 2007,]
+  #removing outlier
+recent <- recent[-4,]
+
+  #function for z score in hypoth test
+hypo.test.zscore <- function(vector1, vector2)
+{
+  mean1 <- mean(vector1)
+  var1 <- var(vector1)
+  n1 <- length(vector1)
+  mean2 <- mean(vector2)
+  var2 <- var(vector2)
+  n2 <- length(vector2)
+  mean.diff <- mean1 - mean2
+  var.n1 <- var1/n1
+  var.n2 <- var2/n2
+  var.combine <- var.n1 + var.n2
+  demon <- sqrt(var.combine)
+  z <- mean.diff/demon
+  return(z)
+}
+
+  #Fatalities, injured, total victims z score
+hypo.test.zscore(recent$Fatalities, old$Fatalities)
+hypo.test.zscore(recent$Injured, old$Injured)
+hypo.test.zscore(recent$Total.victims, old$Total.victims)
+
+
+  #policeman killed
+recent.police <- recent[complete.cases(recent$Policeman.Killed),]
+old.police <- old[complete.cases(old$Policeman.Killed),]
+hypo.test.zscore(recent.police$Policeman.Killed, old.police$Policeman.Killed)
+
+
+
+  
+# ------Visuals
+
+# ------ line graph severity/frequency by time of year
+  #pulling month
+month <- data.frame(df, months(df$Date), month(df$Date))
+month <- month[order(month$month.df.Date.),]
+colnames(month)
+
+month1 <- unique(month$months.df.Date)
+month1 <- month1[order(month1)]
+  #getting frequency
+month1 <- data.frame(month1, tabulate(month$months.df.Date.))
+  #changing column names
+colname <- c("Month", "NoShootings")
+colnames(month1) <- colname
+monthNo <- c(4, 8, 12, 2, 1, 7, 6, 3, 5, 11, 10, 9)
+  #combining
+month1 <- data.frame(month1, monthNo)
+month1 <- month1[order(month1$monthNo),]
+
+  #grouping to get average total victims "severity"
+groupedMonth <- group_by(month, months.df.Date.) %>%
+  summarize(severity=mean(Total.victims))
+groupedMonth = merge(groupedMonth, month1, by.x='months.df.Date.', by.y='Month')  
+
+#line graph
+monthLine <- ggplot(groupedMonth, aes(x=monthNo, y=NoShootings))+
+  geom_line() +
+  geom_point(aes(size=severity))
+  #change axis lables
+monthLine <- monthLine +
+  scale_x_continuous("Month(Number)") +
+  scale_y_continuous("Number of Shootings")
+#change x axis scale
+monthLine <- monthLine +
+  scale_x_continuous(breaks = c(1:12))
+  #Title
+monthLine <- monthLine +
+  ggtitle("Monthly Frequency and Severity")
+monthLine
+
+
+#Pulling year
+year <- data.frame(df, year(df$Date))
+year <- data.frame(year$year.df.Date, year$Total.victims)
+  #changing col names
+colnames <- c("year", "Total.Victim")
+colnames(year) <- colnames
+
+  #severity by year
+year.severity <- group_by(year, year) %>%
+  summarize(severity=mean(Total.Victim))
+  #frequency by year
+year.frequency <- tabulate(match(year$year,unique(year$year)))
+  #reverse order
+year.frequency <- rev(year.frequency)
+  #average killed by year
+year.killed <- data.frame(year$year, df$Fatalities)
+  #changing column names
+colnames <- c("year", "fatalities")
+colnames(year.killed) <- colnames
+  #grouping by year
+year.killed <- group_by(year.killed, year.killed$year) %>%
+  summarize(fatalities=mean(fatalities))
+  #changing column names
+colnames(year.killed) <- colnames
+
+  #combining variables
+year <- data.frame(year.severity, year.frequency, year.killed$fatalities)
+  #changing col names
+colnames <- c("year", "severity", "frequency", "fatalities")
+colnames(year) <- colnames
+
+#line graph
+line.year <- ggplot(year, aes(x=year, y=frequency)) +
+  geom_line() +
+  geom_point(aes(size=severity, color=fatalities))
+  #changing x & y lables
+line.year <- line.year +
+  scale_x_continuous("Year") +
+  scale_y_continuous("Number of Shootings")
+  #adding title
+line.year <- line.year +
+  ggtitle("Frequency and Severity over Time")
+line.year
+
+#combining line graphs into one window
+grid.arrange(monthLine, line.year, nrow=1)
+
+
+# --------- Maps
+Location <- df[,-21:-22]
+  #combining city and state
+Location$Location <- paste(Location$City, ",", Location$State)
+  #change to lower case
+Location$Location <- tolower(Location$Location)
+
+latlon <- geocode(Location$Location)
+
+geocode(Location$Location[322])
+latlon[322,1] <- -111.8315
+latlon[322,2] <- 33.41518
+
+
+
+Location <- data.frame(Location, latlon)
+  #selecting data
+Location <- data.frame(Location$Location,
+                       location$State,
+                       Location$Fatalities,
+                       Location$Injured,
+                       Location$Total.victims,
+                       Location$lon,
+                       Location$lat)
+  #changing column names
+colnames <- c("location", "state", "fatalities", "injured", "total.victims", "lon", "lat")
+colnames(Location) <- colnames
+  #removing alaska & hawaii
+Location <- Location[Location$state != "hawaii",]
+Location <- Location[Location$state != "alaska",]
+
+#making the map
+us <- map_data("state")
+
+map.severity <- ggplot(Location, aes(map_id = state))
+map.severity <- map.severity + 
+  geom_map(map=us, color="white", aes(fill=total.victims))
+map.severity <- map.severity + 
+  expand_limits (x = us$long, y=us$lat)
+map.severity <- map.severity +
+  coord_map()
+  #adding points on location
+map.severity <- map.severity +
+  geom_point(aes(x=lon, y=lat, size=injured, color=fatalities))
+  #changing color scale
+map.severity <- map.severity +
+  scale_colour_gradient(low="pink", high="darkred")
+  #legend position
+map.severity <- map.severity +
+  theme(legend.position="bottom")
+  #title
+map.severity <- map.severity +
+  ggtitle("Severity by Location")
+map.severity
+
+
+#removing outlier - nevada shooting
+Location1 <- Location[-4,]
+
+#map without outlier
+map.severity1 <- ggplot(Location1, aes(map_id= state))
+map.severity1 <- map.severity1 +
+  geom_map(map=us, color="white", aes(fill=total.victims))
+map.severity1 <- map.severity1 +
+  expand_limits (x= us$long, y=us$lat)
+map.severity1 <- map.severity1 +
+  coord_map()
+  #adding points on location
+map.severity1 <- map.severity1 +
+  geom_point(aes(x=lon, y=lat, size=injured, color=fatalities))
+  #changing color scale
+map.severity1 <- map.severity1 +
+  scale_colour_gradient(low="pink", high="darkred")
+  #legend position
+map.severity1 <- map.severity1 +
+  theme(legend.position="bottom")
+  #title
+map.severity1 <- map.severity1 +
+  ggtitle("Severity by Location (Excluding Nevada Shooting)")
+map.severity1
+
+
+#-------histogram
+
+#histogram age
+age <- df[complete.cases(df$Age),]
+  #remove the one with two shooters
+age <- age[-157,]
+age <- age[-49,]
+age <- age[-14,]
+age$Age <- as.numeric(age$Age)
+
+hist.age <- ggplot(age, aes(x=Age, color=Gender)) +
+  geom_histogram(fill="white")
+  #Adding a title
+hist.age <- hist.age +
+  ggtitle("Age of Shooters by Gender")
+hist.age
+
+age.male <- age[which(age$Gender == "M"),]
+age.female <- age[which(age$Gender == "F"),]
+
+  #male age histogram
+hist.age.male <- ggplot(age.male, aes(x=Age)) + 
+  geom_histogram(fill="white", color="black")
+hist.age.male <- hist.age.male +
+  ggtitle("Male Shooters Age")
+hist.age.male
+  #female age histogram
+hist.age.female <- ggplot(age.female, aes(x=Age)) +
+  geom_histogram(fill="white", color="black")
+hist.age.female <- hist.age.female +
+  ggtitle("Female Shooters Age")
+  #one window
+grid.arrange(hist.age.male, hist.age.female, nrow=1)
+
+# -------- scatter plots
+#scatter plot
+  #age by total victim
+scatter.age <- ggplot(age, aes(x=Age, y=age$`Total victims`, shape=Gender)) +
+  geom_point(aes(color=Injured, size=Fatalities))
+  #axis lables
+scatter.age <- scatter.age + 
+  scale_x_continuous("Age of Shooter") +
+  scale_y_continuous("Total Victims")
+  #title
+scatter.age <- scatter.age +
+  ggtitle("Age vs. Severity")
+scatter.age
+
+#removing outlier
+age1 <- age[-4,]
+
+#scatter plot without outlier
+scatter.age1 <- ggplot(age1, aes(x=Age, y=age1$`Total victims`, shape=Gender)) +
+  geom_point(aes(color=Injured, size=Fatalities))
+  #axis lables
+scatter.age1 <- scatter.age1 +
+  scale_x_continuous("Age of Shooter") +
+  scale_y_continuous("Total Victims")
+  #title
+scatter.age1 <- scatter.age1 +
+  ggtitle("Age and Severity (Excluding Nevada Shooting)")
+scatter.age1
+
+scatter.age.lm <- ggplot(age1, aes(x=Age, y=age1$`Total victims`)) +
+  geom_point() +
+  stat_smooth(method=lm)
+scatter.age.lm <- scatter.age.lm +
+  scale_x_continuous("Age") +
+  scale_y_continuous("Total Victims")
+scatter.age.lm
+
+
+#combining scatter plots to one window
+  #removing one legend
+scatter.age <- scatter.age +
+  theme(legend.position="none")
+  #changing title
+scatter.age1 <- scatter.age1 + 
+  ggtitle("(Excluding Nevada Shooting)")
+grid.arrange(scatter.age, scatter.age1, nrow=1)
+
+
+
+#scatter plot for race
+  #Pulling the data
+race <- data.frame(df$Fatalities,
+                   df$Injured,
+                   df$`Total victims`,
+                   df$Race)
+  #changing column names
+colnames <- c("fatalities", "injured", "total.victims", "race")
+colnames(race) <- colnames 
+unique(race$race)
+#scatter plot
+scatter.race <- ggplot(race, aes(x=fatalities, y=total.victims, color=race)) +
+  geom_point(aes(size=injured))
+  #axis lables
+scatter.race <- scatter.race +
+  scale_x_continuous("Fatalities") +
+  scale_y_continuous("Total Victims")
+  #title
+scatter.race <- scatter.race +
+  ggtitle("Race vs. Severity")
+  #legend to bottom
+scatter.race <- scatter.race +
+  theme(legend.position="right")
+scatter.race
+
+#removing outlier
+race1 <- race[-4,]
+#scatter plot
+scatter.race1 <- ggplot(race1, aes(x=fatalities, y=total.victims, color=race)) +
+  geom_point(aes(size=injured))
+  #axis lables
+scatter.race1 <- scatter.race1 +
+  scale_x_continuous("Fatalities") +
+  scale_y_continuous("Total Victims")
+  #title
+scatter.race1 <- scatter.race1 +
+  ggtitle("(Excluding Nevada Shooting)")
+  #legend to bottom
+scatter.race1 <- scatter.race1 +
+  theme(legend.position="right")
+scatter.race1
+
+#combining to one window
+grid.arrange(scatter.race, scatter.race1, nrow=1, widths=1:2)
+
+
+
+#bar graphs
+  #causes
+  #pulling just the cause data
+cause <- df$Cause[complete.cases(df$Cause)]
+  #changing to factor
+cause <- as.factor(cause)
+  #count for each factor
+tabulate(cause)
+df.cause <- data.frame(unique(cause), tabulate(cause))
+  #looking at the structure
+str(df.cause)
+  #column names
+colname <- c("cause", "count")
+colnames(df.cause) <- colname
+  #changing to numeric
+df.cause$count <- as.numeric(df.cause$count)
+str(df.cause)
+  #creating a bar graph
+bar.cause <- ggplot(df.cause, aes(x=cause, y=count, fill=cause)) +
+  geom_bar(stat="identity")
+  #adding title
+bar.cause <- bar.cause +
+  ggtitle("Frequent Causes")
+bar.cause
+
+
+  #target
+  #pulling just the target data
+target <- df$Target[complete.cases(df$Target)]
+  #change to factor
+target <- as.factor(target)
+  #count for each factor
+df.target <- data.frame(unique(target), tabulate(target))
+  #changing the column names
+colname <- c("target", "count")
+colnames(df.target) <- colname
+  #looking at the structure
+str(df.target)
+  #change to numeric
+df.target$count <- as.numeric(df.target$count)
+  #taking only the top 10
+df.target <- df.target[sort(df.target$count, decreasing=TRUE),]
+df.target <- df.target[-1,]
+df.target <- head(df.target, 10)
+  #creating a bar graph
+bar.target <- ggplot(df.target, aes(x=target, y=count, fill=target)) +
+  geom_bar(stat="identity")
+  #adding title
+bar.target <- bar.target +
+  ggtitle("Top 10 Targets")
+bar.target
+
+
+
+
+
+# -------- Use of Modeling Techniques -------
+
+#associative model
+
+
+associative.data <- data.frame(df$Open.Close.Location,
+                               df$Mental.Health.Issues,
+                               df$Race,
+                               df$Gender)
+associative.data
+  #changing column names
+colnames <- c("open/closed.location",
+              "mental.health.issues",
+              "race",
+              "gender")
+colnames(associative.data) <- colnames
+  #looking at structure, ensure factors
+str(associative.data)
+
+  #model
+rules <- apriori(associative.data, parameter=list(support=0.005, confidence=0.5))
+  #inspecting the results
+inspect(rules)
+
+
+
+
+
+#text mining
+  #changing to word string
+file <- df$Summary
+
+  #AFINN data
+afinn <- "/Users/Christina/Documents/My Documents/School/Syracuse/April 2018/IST 687/Project/AFINN.txt"
+afinn <- readLines(afinn)
+  #separate into word and value
+afinn <- data.frame(afinn)
+afinn <- separate(afinn, afinn, c("word", "value"), sep=", ", remove=FALSE)
+afinn <- afinn[,-1]
+  #looking at structure
+str(afinn)
+  #changing value to number
+afinn$value <- as.numeric(afinn$value)
+str(afinn)
+
+  #cleansing the words
+words.vec <- VectorSource(file)
+words.corpus <- Corpus(words.vec)
+
+words.corpus <- tm_map(words.corpus, content_transformer(tolower))
+words.corpus <- tm_map(words.corpus, removePunctuation)
+words.corpus <- tm_map(words.corpus, removeNumbers)
+words.corpus <- tm_map(words.corpus, removeWords, stopwords("english"))
+
+tdm <- TermDocumentMatrix(words.corpus)
+
+m <- as.matrix(tdm)
+wordCount <- rowSums(m)
+words <- names(wordCount)
+
+  #word cloud
+wordCount <- sort(wordCount, decreasing=TRUE)
+cloudFrames <- data.frame(words=names(wordCount), freq=wordCount)
+
+wordcloud(names(wordCount), wordCount, min.freq=5, max.words=50, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+
+  #sentiment analysis
+  #matching words
+matched <- match(words, afinn$word, nomatch=0)
+  #getting index numbers
+afinn.index <- matched[which(matched !=0)]
+  #getting the assigned values
+afinn.value <- afinn[(afinn.index),2]
+  #summing the sentimal values
+sum(afinn.value)
+
+  #counting positive and negative words
+  #splitting list into positive and negative
+p <- afinn[which(afinn$value >0), -2]
+n <- afinn[which(afinn$value <0), -2]
+  #getting the positive word count
+matched.p <- match(words, p, nomatch=0)
+matched.p <- matched.p[which(matched.p !=0)]
+matched.p <- length(matched.p)
+matched.p
+  #getting the negative word count
+matched.n <- match(words,n,nomatch=0)
+matched.n <- matched.n[which(matched.n != 0)] 
+matched.n <- length(matched.n)
+matched.n
+
+  #ratios
+matched.p/matched.n
+matched.p/length(words)
+matched.n/length(words)
+
+```

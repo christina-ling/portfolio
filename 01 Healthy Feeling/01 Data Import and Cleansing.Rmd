@@ -1,0 +1,2070 @@
+---
+title: "01 data import and cleansing"
+author: "Christina Ling"
+date: "April 10, 2019"
+output: html_document
+---
+
+```{r}
+# IST 565 Data Mining
+# Final Project | data import and cleansing
+# Christina Ling
+
+# ----- Libraries -----
+
+# ----- Import Data -----
+
+filename="food_coded.txt"
+food.choices <- read.delim(filename, 
+                           sep="\t", 
+                           header=TRUE, 
+                           fill=TRUE,
+                           na.string=c(""))
+
+# ----- Food Choices ----- 
+
+# ----- GPA Column
+# looking at all variables
+unique(food.choices$GPA)
+# need only numbers as format
+# remove the words and only have the GPA
+food.choices$GPA <- gsub("3.79 bitch", "3.79", food.choices$GPA)
+
+# change the nulls to median of the data
+# nulls = nan, Unknown, Personal
+# get the median
+replace.number <- food.choices[food.choices$GPA != "nan",1]
+replace.number <- replace.number[replace.number !="Unknown"]
+replace.number <- replace.number[replace.number !="Personal "]
+replace.number <- as.numeric(replace.number)
+replace.number <- median(replace.number)
+
+# replace with median
+food.choices$GPA <- gsub("nan", replace.number, food.choices$GPA)
+food.choices$GPA <- gsub("Unknown", replace.number, food.choices$GPA)
+food.choices$GPA <- gsub("Personal ", replace.number, food.choices$GPA)
+#check work
+unique(food.choices$GPA)
+
+# change format to numeric
+food.choices$GPA <- as.numeric(food.choices$GPA)
+# check work
+str(food.choices$GPA)
+
+# ----- Gender column
+# change to factor
+food.choices$Gender <- as.factor(food.choices$Gender)
+#check work
+str(food.choices$Gender)
+
+# ----- Breakfast Column
+#change to factor
+food.choices$breakfast <- as.factor(food.choices$breakfast)
+#check work
+str(food.choices$breakfast)
+
+# ----- carlories_chicken Column
+# from codebook_food
+# multiple choice, 4 options
+# change to factor
+food.choices$calories_chicken <- as.factor(food.choices$calories_chicken)
+#order it
+food.choices$calories_chicken <- ordered(food.choices$calories_chicken)
+# check work
+str(food.choices$calories_chicken)
+
+# ----- calories_day Column
+# look at all options
+unique(food.choices$calories_day)
+
+# Null = NaN
+# Repalce with Median rounded to whole number
+# create list with all numbers (remove NaN)
+replace.number <- food.choices[food.choices$calories_day != "NaN", 
+                               which(colnames(food.choices)=="calories_day")]
+# find median and round to whole number
+replace.number <- round(median(replace.number), 0)
+
+# replace null(NaN) with median
+food.choices$calories_day <- gsub("NaN", replace.number, food.choices$calories_day)
+# check work
+unique(food.choices$calories_day)
+
+# change to factor
+food.choices$calories_day <- as.factor(food.choices$calories_day)
+#order it
+food.choices$calories_day <- ordered(food.choices$calories_day)
+# check work
+str(food.choices$calories_day)
+
+# ----- calorie_scone Column
+# from codebook_food
+# only 4 options, multiple choice
+# change to factor
+food.choices$calories_scone <- as.factor(food.choices$calories_scone)
+#order it
+food.choices$calories_scone <- ordered(food.choices$calories_scone)
+# check work
+str(food.choices)
+
+# ----- Coffee Column
+#change to factor
+food.choices$coffee <- as.factor(food.choices$coffee)
+#check work
+str(food.choices$coffee)
+
+# ------ comfort_food Column
+# change to character
+food.choices$comfort_food <- as.character(food.choices$comfort_food)
+# check work
+str(food.choices)
+
+# ----- Comfort_food_reasons COlumn
+# change to character
+food.choices$comfort_food_reasons <- as.character(food.choices$comfort_food_reasons)
+# check work
+str(food.choices)
+
+# ----- comfort_food_reason_coded
+# look at responses
+unique(food.choices$comfort_food_reasons_coded)
+
+# fill NA with median
+replace.number <- food.choices[-which(is.na(food.choices$comfort_food_reasons_coded)),
+                               which(colnames(food.choices) == "comfort_food_reasons_coded")]
+replace.number <- median(replace.number)
+# replace NA with median
+food.choices[which(is.na(food.choices$comfort_food_reasons_coded)), 
+             which(colnames(food.choices) == "comfort_food_reasons_coded")] = replace.number
+# check work
+unique(food.choices$comfort_food_reasons_coded)
+
+# change format to int 
+food.choices$comfort_food_reasons_coded <- as.integer(food.choices$comfort_food_reasons_coded)
+# change to factor
+food.choices$comfort_food_reasons_coded <- as.factor(food.choices$comfort_food_reasons_coded)
+# check work
+str(food.choices$comfort_food_reasons_coded)
+
+# ----- cook Column
+# look at responses
+unique(food.choices$cook)
+
+# replace NaN with median
+# get median
+replace.number <- food.choices[-which(is.na(food.choices$cook)),
+                               which(colnames(food.choices) == "cook")]
+replace.number <- median(replace.number)
+# replace NaN with median
+food.choices[which(is.na(food.choices$cook)),
+             which(colnames(food.choices) == "cook")] = replace.number
+# check work
+unique(food.choices$cook)
+
+# change to factor
+food.choices$cook <- as.factor(food.choices$cook)
+#order it
+food.choices$cook <- ordered(food.choices$cook)
+# check work
+str(food.choices$cook)
+
+# ----- Comfort_food_reasons_coded.1 Column
+# duplicate of comfort_food_reasons_coded
+# remove from data set
+food.choices <- food.choices[,-which(colnames(food.choices) =="comfort_food_reasons_coded.1")]
+
+# ----- Cuisine COlumn
+# look at responses
+unique(food.choices$cuisine)
+
+# replace NaN with median
+# get median
+replace.number <- food.choices[-which(is.na(food.choices$cuisine)),
+                               which(colnames(food.choices) == "cuisine")]
+replace.number <- median(replace.number)
+# replace with median
+food.choices[which(is.na(food.choices$cuisine)),
+             which(colnames(food.choices) == "cuisine")] = replace.number
+# check work
+unique(food.choices$cuisine)
+
+# change to factor
+food.choices$cuisine <- as.factor(food.choices$cuisine)
+
+# ----- diet_current Column
+str(food.choices$diet_current)
+# change to character
+food.choices$diet_current <- as.character(food.choices$diet_current)
+# check work
+str(food.choices$diet_current)
+
+# ----- diet_current_coded Column
+#change to factor
+food.choices$diet_current_coded <- as.factor(food.choices$diet_current_coded)
+#check work
+str(food.choices$diet_current_coded)
+
+# ----- drink Column
+# looking at responses
+unique(food.choices$drink)
+
+# replace NaN with median
+# get median
+replace.number <- food.choices[-which(is.na(food.choices$drink)),
+                               which(colnames(food.choices) == "drink")]
+replace.number <- median(replace.number)
+# replace NaN
+food.choices[which(is.na(food.choices$drink)),
+             which(colnames(food.choices)=="drink")] = replace.number
+# check work
+unique(food.choices$drink)
+
+# change to factor
+food.choices$drink <- as.factor(food.choices$drink)
+# check work
+str(food.choices$drink)
+
+# ----- eating_changes Column
+#change to character
+food.choices$eating_changes <- as.character(food.choices$eating_changes)
+
+# ----- eating_changes_coded
+# change to factor
+food.choices$eating_changes_coded <- as.factor(food.choices$eating_changes_coded)
+# check work
+str(food.choices$eating_changes_coded)
+
+# ----- food.choices$eating_changes_coded1 Column
+#change to factor
+food.choices$eating_changes_coded1 <- as.factor(food.choices$eating_changes_coded1)
+#check work
+str(food.choices$eating_changes_coded1)
+
+# ---- eating out Column
+#change to factor
+food.choices$eating_out <- as.factor(food.choices$eating_out)
+#order it
+food.choices$eating_out <- ordered(food.choices$eating_out)
+#check work
+str(food.choices$eating_out)
+
+# ----- employment Column
+# look at responses
+unique(food.choices$employment)
+
+# replace NaN no job
+food.choices[which(is.na(food.choices$employment)),
+             which(colnames(food.choices) == "employment")] = 3
+#check work
+unique(food.choices$employment)
+
+#change to factor
+food.choices$employment <- as.factor(food.choices$employment)
+#check work
+str(food.choices$employment)
+
+# ----- ethnic_food Column
+#change to factor
+food.choices$ethnic_food <- as.factor(food.choices$ethnic_food)
+#order it
+food.choices$ethnic_food <- ordered(food.choices$ethnic_food)
+#check work
+str(food.choices$ethnic_food)
+
+# ----- exercise Column
+#look at responses
+unique(food.choices$exercise)
+#replace NaN with 5 (never)
+food.choices[which(is.na(food.choices$exercise)),
+             which(colnames(food.choices) == "exercise")] = 5
+# check work
+unique(food.choices$exercise)
+
+#change to factor
+food.choices$exercise <- as.factor(food.choices$exercise)
+#order it
+food.choices$exercise <- ordered(food.choices$exercise)
+#check work
+str(food.choices$exercise)
+
+# ----- father_education Column
+# look at responses
+unique(food.choices$father_education)
+# replace NaN with median
+# get median
+replace.number <- food.choices[-which(is.na(food.choices$father_education)),
+                               which(colnames(food.choices) == "father_education")]
+replace.number <- median(replace.number)
+# replace NaN with median
+food.choices[which(is.na(food.choices$father_education)),
+             which(colnames(food.choices) == "father_education")] = replace.number
+# check work
+unique(food.choices$father_education)
+
+#change to factor
+food.choices$father_education <- as.factor(food.choices$father_education)
+#order it
+food.choices$father_education <- ordered(food.choices$father_education)
+#check work
+str(food.choices$father_education)
+
+# ----- father_professional Column
+str(food.choices$father_profession)
+unique(food.choices$father_profession)
+
+# change to lower case
+food.choices$father_profession <- tolower(food.choices$father_profession)
+# remove white space
+food.choices$father_profession <- gsub(" ", "", food.choices$father_profession)
+# correct error
+food.choices$father_profession <- gsub("profesor", "professor", food.choices$father_profession)
+# combine similar jobs
+food.choices$father_profession <- gsub("hisownbusiness", "businessowner", food.choices$father_profession)
+food.choices$father_profession <- gsub("ownshisownpromotionalcompany", "businessowner", food.choices$father_profession)
+food.choices$father_profession <- gsub("smallbusinessowner", "businessowner", food.choices$father_profession)
+food.choices$father_profession <- gsub("ownerofnewyorklunch", "businessowner", food.choices$father_profession)
+food.choices$father_profession <- gsub("ownsbusiness", "businessowner", food.choices$father_profession)
+food.choices$father_profession <- gsub("ownshisbusiness", "businessowner", food.choices$father_profession)
+food.choices$father_profession <- gsub("selfemployedconstruction", "selfemployed", food.choices$father_profession)
+food.choices$father_profession <- gsub("idk", "unknown", food.choices$father_profession)
+food.choices$father_profession <- gsub("notsure", "unknown", food.choices$father_profession)
+food.choices$father_profession <- gsub("nan", "unknown", food.choices$father_profession)
+food.choices$father_profession <- gsub("manageratpepsi", "manager", food.choices$father_profession)
+food.choices$father_profession <- gsub("storemanageratgianteagle", "manager", food.choices$father_profession)
+food.choices$father_profession <- gsub("businessguy", "businessman", food.choices$father_profession)
+food.choices$father_profession <- gsub("policeforce", "policeofficer", food.choices$father_profession)
+food.choices$father_profession <- gsub("corporate manager", "manager", food.choices$father_profession)
+food.choices$father_profession <- gsub("beverageandfoodsales", "sales", food.choices$father_profession)
+food.choices$father_profession <- gsub("constructionmanagement", "manager", food.choices$father_profession)
+food.choices$father_profession <- gsub("salesmanager", "manager", food.choices$father_profession)
+food.choices$father_profession <- gsub("retired-busdriver", "retire", food.choices$father_profession)
+food.choices$father_profession <- gsub("carsalesman", "sales", food.choices$father_profession)
+food.choices$father_profession <- gsub("projectmanager", "manager", food.choices$father_profession)
+food.choices$father_profession <- gsub("gesalesman", "sale", food.choices$father_profession)
+food.choices$father_profession <- gsub("retired", "retire", food.choices$father_profession)
+food.choices$father_profession <- gsub("salesman", "sales", food.choices$father_profession)
+
+#change to factor
+food.choices$father_profession <- as.factor(food.choices$father_profession)
+# check work
+str(food.choices$father_profession)
+
+# ----- fav_cuisine Column
+#similar to fav_cuisine_coded
+# remove this column
+food.choices <- food.choices[,-which(colnames(food.choices) == "fav_cuisine")]
+
+# ----- fav_cuisine_coded Column
+# look at responses
+unique(food.choices$fav_cuisine_coded)
+#change to factor
+food.choices$fav_cuisine_coded <- as.factor(food.choices$fav_cuisine_coded)
+#check work
+str(food.choices$fav_cuisine_coded)
+
+# ----- fav_food Column
+#look at response
+unique(food.choices$fav_food)
+
+# replace NaN with median
+# get median
+replace.number <- food.choices[-which(is.na(food.choices$fav_food)),
+                               which(colnames(food.choices) == "fav_food")]
+replace.number <- median(replace.number)
+food.choices[which(is.na(food.choices$fav_food)),
+             which(colnames(food.choices) == "fav_food")] = replace.number
+#check work
+unique(food.choices$fav_food)
+
+#change to factor
+food.choices$fav_food <- as.factor(food.choices$fav_food)
+#check work
+str(food.choices$fav_food)
+
+# ----- food_childhood Column
+#change to character
+food.choices$food_childhood <- as.character(food.choices$food_childhood)
+#check work
+str(food.choices$food_childhood)
+
+# ----- fries Column
+# look at responses
+unique(food.choices$fries)
+#change to factor
+food.choices$fries <- as.factor(food.choices$fries)
+#check work
+str(food.choices$fries)
+
+# ----- fruit_day Column
+# change to factor
+food.choices$fruit_day <- as.factor(food.choices$fruit_day)
+#order it
+food.choices$fruit_day <- ordered(food.choices$fruit_day)
+#check work
+str(food.choices$fruit_day)
+
+# ----- grade_level COlumn
+#change to factor
+food.choices$grade_level <- as.factor(food.choices$grade_level)
+#order it
+food.choices$grade_level <- ordered(food.choices$grade_level)
+#check work
+str(food.choices$grade_level)
+
+# ----- greek_food Columm
+#change to factor
+food.choices$greek_food <- as.factor(food.choices$greek_food)
+#order it
+food.choices$greek_food <- ordered(food.choices$greek_food)
+#check work
+str(food.choices$greek_food)
+
+# ----- healthy_feel Column
+#change to factor
+food.choices$healthy_feeling <- as.factor(food.choices$healthy_feeling)
+#order it
+food.choices$healthy_feeling <- ordered(food.choices$healthy_feeling)
+#check work
+str(food.choices$healthy_feeling)
+
+# ----- healthy_meal column
+#change to character
+food.choices$healthy_meal <- as.character(food.choices$healthy_meal)
+#check work
+str(food.choices$healthy_meal)
+
+# ----- ideal_diet Column
+#change to character
+food.choices$ideal_diet <- as.character(food.choices$ideal_diet)
+#check work
+str(food.choices$ideal_diet)
+
+# ----- ideal_diet_coded
+# change to factor
+food.choices$ideal_diet_coded <- as.factor(food.choices$ideal_diet_coded)
+#check work
+str(food.choices$ideal_diet_coded)
+
+# ----- income Column
+# looking at responses
+unique(food.choices$income)
+
+# replace NaN with median
+#get median
+replace.number <- food.choices[-which(is.na(food.choices$income)),
+                               which(colnames(food.choices) == "income")]
+replace.number <- median(replace.number)
+#replace NaN
+food.choices[which(is.na(food.choices$income)),
+             which(colnames(food.choices) == "income")] = replace.number
+#check work
+unique(food.choices$income)
+
+#change to factor
+food.choices$income <- as.factor(food.choices$income)
+#order it
+food.choices$income <- ordered(food.choices$income)
+#check work
+str(food.choices$income)
+
+# ----- indian_food Column
+#change to factor
+food.choices$indian_food <- as.factor(food.choices$indian_food)
+#order it
+food.choices$indian_food <- ordered(food.choices$indian_food)
+#check work
+str(food.choices$indian_food)
+
+# ----- italian_food Column
+#change to factor
+food.choices$italian_food <- as.factor(food.choices$italian_food)
+#order it
+food.choices$italian_food <- ordered(food.choices$italian_food)
+#check work
+str(food.choices$italian_food)
+
+# ----- life_reward Column
+length(which(is.na(food.choices$life_rewarding)))
+# only 1 missing value
+#repalce NaN with median
+#get median
+replace.number <- food.choices[-which(is.na(food.choices$life_rewarding)),
+                               which(colnames(food.choices) == "life_rewarding")]
+replace.number <- median(replace.number)
+# replace NaN with median
+food.choices[which(is.na(food.choices$life_rewarding)),
+             which(colnames(food.choices) == "life_rewarding")] = replace.number
+#check work
+unique(food.choices$life_rewarding)
+
+#change to factor
+food.choices$life_rewarding <- as.factor(food.choices$life_rewarding)
+# order it
+food.choices$life_rewarding <- ordered(food.choices$life_rewarding)
+#check work
+str(food.choices$life_rewarding)
+
+# ----- marital_status Column
+# look at resposes
+unique(food.choices$marital_status)
+# how many NaN are there
+length(which(is.na(food.choices$marital_status)))
+# replace with median
+# get median
+replace.number <- food.choices[-which(is.na(food.choices$marital_status)),
+                               which(colnames(food.choices) =="marital_status")]
+replace.number <- median(replace.number)
+food.choices[which(is.na(food.choices$marital_status)),
+             which(colnames(food.choices) == "marital_status")] = replace.number
+#check work
+unique(food.choices$marital_status)
+
+#change to factor
+food.choices$marital_status <- as.factor(food.choices$marital_status)
+#check work
+str(food.choices$marital_status)
+
+# ----- meals_dinner_friend Column
+#change to character
+food.choices$meals_dinner_friend <- as.character(food.choices$meals_dinner_friend)
+#check work
+str(food.choices$meals_dinner_friend)
+
+# ----- mothers_eduation Column
+# look at reponses
+unique(food.choices$mother_education)
+# how many NaN
+length(which(is.na(food.choices$mother_education)))
+
+#replace with median
+#get median
+replace.number <- food.choices[-which(is.na(food.choices$mother_education)),
+                               which(colnames(food.choices) == "mother_education")]
+replace.number <- median(replace.number)
+# replace NaN
+food.choices[which(is.na(food.choices$mother_education)),
+             which(colnames(food.choices) == "mother_education")] = replace.number
+#check work
+unique(food.choices$mother_education)
+
+#change to factor
+food.choices$mother_education <- as.factor(food.choices$mother_education)
+#order it
+food.choices$mother_education <- ordered(food.choices$mother_education)
+#check work
+str(food.choices$mother_education)
+
+# ----- mothers_profession Column
+# look at responses
+unique(food.choices$mother_profession)
+# combine similar responses
+food.choices$mother_profession <- gsub("owns business", "business owner", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Special Education Teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Elementary School Teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("House wife", "stay at home mom", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Underwiriter", "underwriter", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Assiant", "assistant", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Strategic Planning and Programs Manager", "Manager", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("management", "manager", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Works in retail", "retail", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Resouces", "resources", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Middle school teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Art teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Register Nurse", "nurse", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Stay home", "stay at home mom", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("school teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Stay-At-Home Mom", "stay at home mom", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("A teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Stay at home mother", "stay at home mom", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Special Ed Teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("nothing", "unemployed", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Fourth Grade Teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Health teacher", "teacher", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Business Women", "business", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("Her own business", "business owner", food.choices$mother_profession)
+food.choices$mother_profession <- gsub("House-wife", "stay at home mom", food.choices$mother_profession)
+
+# change to lower and remove white space
+food.choices$mother_profession <- tolower(food.choices$mother_profession)
+food.choices$mother_profession <- gsub(" ", "", food.choices$mother_profession)
+
+#change to character
+food.choices$mother_profession <- as.character(food.choices$mother_profession)
+#check work
+str(food.choices$mother_profession)
+
+# ----- nutritional_check Column
+#check responses
+unique(food.choices$nutritional_check)
+#change to factor
+food.choices$nutritional_check <- as.factor(food.choices$nutritional_check)
+#order it
+food.choices$nutritional_check <- ordered(food.choices$nutritional_check)
+#check work
+str(food.choices$nutritional_check)
+
+# ----- on_off_campus Column
+# look at responses
+unique(food.choices$on_off_campus)
+# how many NaN
+length(which(is.na(food.choices$on_off_campus)))
+# replace with median
+# get median
+replace.number <- food.choices[-which(is.na(food.choices$on_off_campus)),
+                               which(colnames(food.choices) == "on_off_campus")]
+replace.number <- median(replace.number)
+# replace NaN
+food.choices[which(is.na(food.choices$on_off_campus)),
+             which(colnames(food.choices) == "on_off_campus")] = replace.number
+#check work
+unique(food.choices$on_off_campus)
+
+#change to factor
+food.choices$on_off_campus <- as.factor(food.choices$on_off_campus)
+#check work
+str(food.choices$on_off_campus)
+
+# ----- parents_cook Column
+#look at responses
+unique(food.choices$parents_cook)
+#change to factor
+food.choices$parents_cook <- as.factor(food.choices$parents_cook)
+#order it
+food.choices$parents_cook <- ordered(food.choices$parents_cook)
+#check work
+str(food.choices$parents_cook)
+
+
+# ----- pay_meal_out Column
+#look at responses
+unique(food.choices$pay_meal_out)
+#change to factor
+food.choices$pay_meal_out <- as.factor(food.choices$pay_meal_out)
+#order it
+food.choices$pay_meal_out <- ordered(food.choices$pay_meal_out)
+#check work
+str(food.choices$pay_meal_out)
+
+# ----- Persian_food Column
+#look at responses
+unique(food.choices$persian_food)
+# how many NaN?
+length(which(is.na(food.choices$persian_food))) #1
+#replace NaN with median
+#get median
+replace.number <- food.choices[-which(is.na(food.choices$persian_food)),
+                               which(colnames(food.choices) == "persian_food")]
+replace.number <- median(replace.number)
+# replace NaN
+food.choices[which(is.na(food.choices$persian_food)),
+             which(colnames(food.choices) == "persian_food")] = replace.number
+#check work
+unique(food.choices$persian_food)
+
+#change to factor
+food.choices$persian_food <- as.factor(food.choices$persian_food)
+#order it
+food.choices$persian_food <- ordered(food.choices$persian_food)
+#check work
+str(food.choices$persian_food)
+
+# ----- self_perception_weight
+#look at responses
+unique(food.choices$self_perception_weight)
+#how many NaN?
+length(which(is.na(food.choices$self_perception_weight))) #1
+#replace with median
+#get median
+replace.number <- food.choices[-which(is.na(food.choices$self_perception_weight)),
+                               which(colnames(food.choices) == "self_perception_weight")]
+replace.number <- median(replace.number)
+# replace NaN
+food.choices[which(is.na(food.choices$self_perception_weight)),
+             which(colnames(food.choices) == "self_perception_weight")] = replace.number
+#check work
+unique(food.choices$self_perception_weight)
+
+#change to factor
+food.choices$self_perception_weight <- as.factor(food.choices$self_perception_weight)
+#order it
+food.choices$self_perception_weight <- ordered(food.choices$self_perception_weight)
+#check work
+str(food.choices$self_perception_weight)
+
+# ----- soup Column
+#check responses
+unique(food.choices$soup)
+#how many NaN?
+length(which(is.na(food.choices$soup))) #1
+# replace with median
+#get median
+replace.number <- food.choices[-which(is.na(food.choices$soup)),
+                               which(colnames(food.choices) == "soup")]
+replace.number <- median(replace.number)
+# replace NaN with median
+food.choices[which(is.na(food.choices$soup)),
+             which(colnames(food.choices) == "soup")] = replace.number
+#check work
+unique(food.choices$soup)
+
+#change to factor
+food.choices$soup <- as.factor(food.choices$soup)
+#check work
+str(food.choices$soup)
+
+# ----- sports Column
+# check responses
+unique(food.choices$sports)
+# how many NaN?
+length(which(is.na(food.choices$sports)))
+# replace with 2 (no)
+food.choices[which(is.na(food.choices$sports)),
+             which(colnames(food.choices) == "sports")] = 2
+# check work
+unique(food.choices$sports)
+
+#change to factor
+food.choices$sports <- as.factor(food.choices$sports)
+#check work
+str(food.choices$sports)
+
+# ----- thai_food column
+#check responses
+unique(food.choices$thai_food)
+#change to factor
+food.choices$thai_food <- as.factor(food.choices$thai_food)
+#order it
+food.choices$thai_food <- ordered(food.choices$thai_food)
+#check work
+str(food.choices$thai_food)
+
+# ----- tortilla_calories
+#check responses
+unique(food.choices$tortilla_calories)
+#how many NaN?
+length(which(is.na(food.choices$tortilla_calories))) #1
+#replace with median
+#get median
+replace.number <- food.choices[-which(is.na(food.choices$tortilla_calories)),
+                               which(colnames(food.choices) == "tortilla_calories")]
+replace.number <- median(replace.number)
+#replace NaN
+food.choices[which(is.na(food.choices$tortilla_calories)),
+             which(colnames(food.choices) == "tortilla_calories")] = replace.number
+#check work
+unique(food.choices$tortilla_calories)
+
+#change to factor
+food.choices$tortilla_calories <- as.factor(food.choices$tortilla_calories)
+#order it
+food.choices$tortilla_calories <- ordered(food.choices$tortilla_calories)
+#check work
+str(food.choices$tortilla_calories)
+
+# ----- turkey_calories Column
+#check reponses
+unique(food.choices$turkey_calories)
+#change to factor
+food.choices$turkey_calories <- as.factor(food.choices$turkey_calories)
+#order it
+food.choices$turkey_calories <- ordered(food.choices$turkey_calories)
+#check work
+str(food.choices$turkey_calories)
+
+# ----- type_sports Column
+#check responses
+unique(food.choices$type_sports)
+#remove .
+food.choices$type_sports <- gsub("\\.", "", food.choices$type_sports)
+#change to lower case
+food.choices$type_sports <- tolower(food.choices$type_sports)
+#change nan to none
+food.choices$type_sports <- gsub("nan", "none", food.choices$type_sports)
+food.choices$type_sports <- gsub(" none", "none", food.choices$type_sports)
+food.choices$type_sports <- gsub("no, i don't play sport", "none", food.choices$type_sports)
+food.choices$type_sports <- gsub("none organized", "none", food.choices$type_sports)
+food.choices$type_sports <- gsub("none at the moment", "none", food.choices$type_sports)
+food.choices$type_sports <- gsub("no particular engagement", "none", food.choices$type_sports)
+food.choices$type_sports <- gsub("none ", "none", food.choices$type_sports)
+food.choices$type_sports <- gsub("noneright now", "none", food.choices$type_sports)
+# remove white space at end
+food.choices$type_sports <- gsub("basketball ", "basketball",food.choices$type_sports)
+food.choices$type_sports <- gsub("dancing ", "dancing", food.choices$type_sports)
+food.choices$type_sports <- gsub("lacrosse ", "lacrosse", food.choices$type_sports)
+food.choices$type_sports <- gsub("softball ", "softball", food.choices$type_sports)
+food.choices$type_sports <- gsub("wrestling ", "wrestling", food.choices$type_sports)
+food.choices$type_sports <- gsub("soccer ", "soccer", food.choices$type_sports)
+food.choices$type_sports <- gsub("skiing ", "skiing", food.choices$type_sports)
+food.choices$type_sports <- gsub("water polo and running ", "water polo and running", food.choices$type_sports)
+food.choices$type_sports <- gsub("rowing ", "rowing", food.choices$type_sports)
+food.choices$type_sports <- gsub("tennis  ", "tennis", food.choices$type_sports)
+food.choices$type_sports <- gsub("running ", "running", food.choices$type_sports)
+#consistent wording
+food.choices$type_sports <- gsub("soccerand", "soccer and", food.choices$type_sports)
+food.choices$type_sports <- gsub("soccergym", "soccer gym", food.choices$type_sports)
+food.choices$type_sports <- gsub("instramural volleyball", "volleyball", food.choices$type_sports)
+food.choices$type_sports <- gsub("recreational basketball", "basketball", food.choices$type_sports)
+food.choices$type_sports <- gsub("equestrian team", "horse back riding", food.choices$type_sports)
+food.choices$type_sports <- gsub("rec volleyball", "volleyball", food.choices$type_sports)
+food.choices$type_sports <- gsub("i danced in high school", "dancing", food.choices$type_sports)
+food.choices$type_sports <- gsub("competitive ", "", food.choices$type_sports)
+food.choices$type_sports <- gsub("collegiate ", "", food.choices$type_sports)
+food.choices$type_sports <- gsub("fotball", "football", food.choices$type_sports)
+food.choices$type_sports <- gsub("when i can, rarely though play pool, darts, and basketball", "basketball", food.choices$type_sports)
+food.choices$type_sports <- gsub("i used to play softball", "softball", food.choices$type_sports)
+# remove and
+food.choices$type_sports <- gsub("and ", "", food.choices$type_sports)
+food.choices$type_sports <- gsub("& ", "", food.choices$type_sports)
+# remove ,
+food.choices$type_sports <- gsub("\\,", "", food.choices$type_sports)
+
+# ----- veggies_day Column
+#check responses
+unique(food.choices$veggies_day)
+#change to factor
+food.choices$veggies_day <- as.factor(food.choices$veggies_day)
+#order it
+food.choices$veggies_day <- ordered(food.choices$veggies_day)
+#check work
+str(food.choices$veggies_day)
+
+# ----- vitamins Colmns
+#check responses
+unique(food.choices$vitamins)
+#change to factor
+food.choices$vitamins <- as.factor(food.choices$vitamins)
+#check work
+str(food.choices$vitamins)
+
+# ----- waffle_calories Column
+#check responses
+unique(food.choices$waffle_calories)
+#change to factor
+food.choices$waffle_calories <- as.factor(food.choices$waffle_calories)
+#order it
+food.choices$waffle_calories <- ordered(food.choices$waffle_calories)
+#check work
+str(food.choices$waffle_calories)
+
+# ----- weight Column
+#check responses
+unique(food.choices$weight)
+# change to consistent responses
+food.choices$weight <- gsub("Not sure, 240", "240", food.choices$weight)
+food.choices$weight <- gsub(" lbs", "", food.choices$weight)
+
+# how many NaN?
+length(which(food.choices$weight == "nan")) #2
+#replace with median
+replace.number <- food.choices[-which(food.choices$weight == "nan"),
+                               which(colnames(food.choices) == "weight")]
+replace.number <- replace.number[-3]
+replace.number <- as.numeric(replace.number)
+replace.number <- median(replace.number)
+#replace nan
+food.choices[which(food.choices$weight == "nan"),
+             which(colnames(food.choices) == "weight")] = replace.number
+food.choices$weight[3] <- replace.number
+#check work
+unique(food.choices$weight)
+
+#change to numeric
+food.choices$weight <- as.numeric(food.choices$weight)
+#check work
+str(food.choices$weight)
+
+
+
+
+
+
+
+
+
+
+#### CREATE COPY WITH CODES ###
+food.choices.coded <- food.choices
+
+
+
+
+# ----- Gender Column
+# look at all variables
+unique(food.choices$Gender)
+
+# From codebook_food
+# 1 = Female
+# 2 = Male
+# Change to Female or male
+food.choices$Gender <- gsub(1, "female", food.choices$Gender)
+food.choices$Gender <- gsub(2, "male", food.choices$Gender)
+# check work
+unique(food.choices$Gender)
+
+# change format to factor
+food.choices$Gender <- as.factor(food.choices$Gender)
+# check work
+str(food.choices)
+
+# ----- breakfast Column
+# look at all variables
+unique(food.choices$breakfast)
+# From codebook_food
+# 1 = cereal
+# 2 = donut
+# change to cereal or donut
+food.choices$breakfast <- gsub(1, "cereal", food.choices$breakfast)
+food.choices$breakfast <- gsub(2, "donut", food.choices$breakfast)
+# check work
+unique(food.choices$breakfast)
+
+#change format to factor
+food.choices$breakfast <- as.factor(food.choices$breakfast)
+# check work
+str(food.choices)
+
+# ----- calories_day Column
+# from codebook_food
+# 1 = i dont know (not of the results == 1)
+# 2 = not important
+# 3 = moderately important
+# 4 = very important
+# replace variables
+food.choices$calories_day <- gsub(2, "not important", food.choices$calories_day)
+food.choices$calories_day <- gsub(3, "moderately important", food.choices$calories_day)
+food.choices$calories_day <- gsub(4, "very important", food.choices$calories_day)
+
+# change to factor
+food.choices$calories_day <- as.factor(food.choices$calories_day)
+#order it
+food.choices$calories_day <- ordered(food.choices$calories_day,
+                                     levels=c("not important",
+                                              "moderately important",
+                                              "very important"))
+# check work
+str(food.choices)
+
+# ----- coffee Column
+# look at reponses
+unique(food.choices$coffee)
+
+# from codebook_food
+# 1 = frapuccino
+# 2 = espresso
+# change variables
+food.choices$coffee <- gsub(1, "frapucinno", food.choices$coffee)
+food.choices$coffee <- gsub(2, "espresso", food.choices$coffee)
+# check work
+unique(food.choices$coffee)
+
+# change format to factor
+food.choices$coffee <- as.factor(food.choices$coffee)
+# check work
+str(food.choices)
+
+# ----- comfort_food_reason_coded
+# from codebook_food
+# 1= stress
+# 2= boredom
+# 3= depression/saddness
+# 4= hunger
+# 5= laziness
+# 6= cold weather
+# 7= happiness
+# 8= watching TV
+# 9= none
+food.choices$comfort_food_reasons_coded <- gsub(1, "stress", food.choices$comfort_food_reasons_coded)
+food.choices$comfort_food_reasons_coded <- gsub(2, "boredom", food.choices$comfort_food_reasons_coded)
+food.choices$comfort_food_reasons_coded <- gsub(3, "depression/saddness", food.choices$comfort_food_reasons_coded)
+food.choices$comfort_food_reasons_coded <- gsub(4, "hunger", food.choices$comfort_food_reasons_coded)
+food.choices$comfort_food_reasons_coded <- gsub(5, "laziness", food.choices$comfort_food_reasons_coded)
+food.choices$comfort_food_reasons_coded <- gsub(6, "cold weather", food.choices$comfort_food_reasons_coded)
+food.choices$comfort_food_reasons_coded <- gsub(7, "happiness", food.choices$comfort_food_reasons_coded)
+food.choices$comfort_food_reasons_coded <- gsub(8, "watching tv", food.choices$comfort_food_reasons_coded)
+food.choices$comfort_food_reasons_coded <- gsub(9, "none", food.choices$comfort_food_reasons_coded)
+# check work
+unique(food.choices$comfort_food_reasons_coded)
+
+# change to factor
+food.choices$comfort_food_reasons_coded <- as.factor(food.choices$comfort_food_reasons_coded)
+#check work
+str(food.choices$comfort_food_reasons_coded)
+
+# ----- cook Column
+# from codebook_food
+# 1 = every day
+# 2 = a couple of times a week
+# 3 = whenever I can, but that is not often
+# 4 = I only help during holidays
+# 5 = never, I really do not know my way around a kitchen
+# changing the values
+food.choices$cook <- gsub(1, "every day", food.choices$cook)
+food.choices$cook <- gsub(2, "couple of times a week", food.choices$cook)
+food.choices$cook <- gsub(3, "not often", food.choices$cook)
+food.choices$cook <- gsub(4, "holidays only", food.choices$cook)
+food.choices$cook <- gsub(5, "never", food.choices$cook)
+#check work
+unique(food.choices$cook)
+
+# change to factor
+food.choices$cook <- as.factor(food.choices$cook)
+#order it
+food.choices$cook <- ordered(food.choices$cook,
+                             levels=c("every day",
+                                      "couple of times a week",
+                                      "not often",
+                                      "holidays only",
+                                      "never"))
+# check work
+str(food.choices$cook)
+
+# ----- Cuisine Column
+# from codebook_food
+# 1= american
+# 2= mexican
+# 3= asian
+# 4= indian
+# 5= american inspired international
+# 6= other
+# replacing variables
+food.choices$cuisine <- gsub(1, "american", food.choices$cuisine)
+food.choices$cuisine <- gsub(2, "mexican", food.choices$cuisine)
+food.choices$cuisine <- gsub(3, "asian", food.choices$cuisine)
+food.choices$cuisine <- gsub(4, "indian", food.choices$cuisine)
+food.choices$cuisine <- gsub(5, "american inspired international", food.choices$cuisine)
+food.choices$cuisine <- gsub(6, "other", food.choices$cuisine)
+# check work
+unique(food.choices$cuisine)
+
+#change to factor
+food.choices$cuisine <- as.factor(food.choices$cuisine)
+#check work
+str(food.choices$cuisine)
+
+# ----- diet_current_coded
+# look at responses
+unique(food.choices$diet_current_coded)
+
+# from codebook_food
+# 1=healthy/balanced/moderated
+# 2= unhealthy/cheap/too much/random
+# 3= the same thing over and over
+# 4= unclear
+# replace variables
+food.choices$diet_current_coded <- gsub(1, "healthy", food.choices$diet_current_coded)
+food.choices$diet_current_coded <- gsub(2, "unhealth", food.choices$diet_current_coded)
+food.choices$diet_current_coded <- gsub(3, "same thing", food.choices$diet_current_coded)
+food.choices$diet_current_coded <- gsub(4, "unclear", food.choices$diet_current_coded)
+# check work
+unique(food.choices$diet_current_coded)
+
+# change to factor
+food.choices$diet_current_coded <- as.factor(food.choices$diet_current_coded)
+# check work
+str(food.choices$diet_current_coded)
+
+# ----- drink Column
+# from codebook_food
+# 1= orange juice
+# 2= soda
+# replace variables
+food.choices$drink <- gsub(1, "orange juice", food.choices$drink)
+food.choices$drink <- gsub(2, "soda", food.choices$drink)
+# check work
+unique(food.choices$drink)
+
+#change to factor
+food.choices$drink <- as.factor(food.choices$drink)
+#check work
+str(food.choices$drink)
+
+# ----- eating_changes_coded
+#looking at responses
+unique(food.choices$eating_changes_coded)
+
+# from codebook_food
+# 1= worse
+# 2= better
+# 3= the same
+# 4= Unclear
+# change variables
+food.choices$eating_changes_coded <- gsub(1, "worse", food.choices$eating_changes_coded)
+food.choices$eating_changes_coded <- gsub(2, "better", food.choices$eating_changes_coded)
+food.choices$eating_changes_coded <- gsub(3, "the same", food.choices$eating_changes_coded)
+food.choices$eating_changes_coded <- gsub(4, "unclear", food.choices$eating_changes_coded)
+# check work
+unique(food.choices$eating_changes_coded)
+
+# change to factor
+food.choices$eating_changes_coded <- as.factor(food.choices$eating_changes_coded)
+# check Work
+str(food.choices$eating_changes_coded)
+
+# ----- eating_changes_coded1
+#looking at responses
+unique(food.choices$eating_changes_coded1)
+
+# from codebook_food
+# 1= eat faster
+# 2= bigger quantity
+# 3= worse quality
+# 4= same food
+# 5= healthier
+# 6= unclear
+# 7= drink coffee
+# 8= less food
+# 9= more sweets
+# 10= timing
+# 11= more carbs or snacking
+# 12= drink more water
+# 13= more variety
+food.choices$eating_changes_coded1 <- gsub(1, "eat faster", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(2, "bigger quantity", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(3, "worse quality", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(4, "same food", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(5, "healthier", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(6, "unclear", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(7, "drink coffee", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(8, "less food", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(9, "more sweets", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(10, "timing", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(11, "more carbs or snacking", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(12, "drink more water", food.choices$eating_changes_coded1)
+food.choices$eating_changes_coded1 <- gsub(13, "more variety", food.choices$eating_changes_coded1)
+#check work
+unique(food.choices$eating_changes_coded1)
+
+#change to factor
+food.choices$eating_changes_coded1 <- as.factor(food.choices$eating_changes_coded1)
+#check work
+str(food.choices$eating_changes_coded1)
+
+# ----- eating out Column
+#from codebook_food
+# 1= never
+# 2= 1-2 times
+# 3= 2-3 times
+# 4= 3-5 times
+# 5= everyday
+# changing variables
+food.choices$eating_out <- as.character(food.choices$eating_out)
+food.choices$eating_out[food.choices$eating_out == "1"] = "never"
+food.choices$eating_out[food.choices$eating_out == "2"] = "1-2 times"
+food.choices$eating_out[food.choices$eating_out == "3"] = "2-3 times"
+food.choices$eating_out[food.choices$eating_out == "4"] = "3-5 times"
+food.choices$eating_out[food.choices$eating_out == "5"] = "every day"
+#check work
+unique(food.choices$eating_out)
+
+#change to factor
+food.choices$eating_out <- as.factor(food.choices$eating_out)
+#order it
+food.choices$eating_out <- ordered(food.choices$eating_out,
+                                   levels=c("never",
+                                            "1-2 times",
+                                            "2-3 times",
+                                            "3-5 times",
+                                            "every day"))
+#check work
+str(food.choices$eating_out)
+
+# ----- employment Column
+#from codebook_food
+# 1= yes full time
+# 2= yes part time
+# 3= no
+# replace variables
+food.choices$employment <- gsub(1, "yes full time", food.choices$employment)
+food.choices$employment <- gsub(2, "yes part time", food.choices$employment)
+food.choices$employment <- gsub(3, "no", food.choices$employment)
+#check work
+unique(food.choices$employment)
+
+#change to factor
+food.choices$employment <- as.factor(food.choices$employment)
+#order it
+food.choices$employment <- ordered(food.choices$employment,
+                                   levels=c("yes full time",
+                                            "yes part time",
+                                            "no"))
+#check work
+str(food.choices$employment)
+
+# ----- ethnic food Column
+# look at responses
+unique(food.choices$ethnic_food)
+
+#from codebook_food
+# 1= very unlikely
+# 2= unlikely
+# 3= neutral
+# 4= likely
+# 5= very likely
+# change variables
+food.choices$ethnic_food <- gsub(1, "very unlikely", food.choices$ethnic_food)
+food.choices$ethnic_food <- gsub(2, "unlikely", food.choices$ethnic_food)
+food.choices$ethnic_food <- gsub(3, "neutral", food.choices$ethnic_food)
+food.choices$ethnic_food <- gsub(4, "likely", food.choices$ethnic_food)
+food.choices$ethnic_food <- gsub(5, "very likely", food.choices$ethnic_food)
+#check work
+unique(food.choices$ethnic_food)
+
+#change to factor
+food.choices$ethnic_food <- as.factor(food.choices$ethnic_food)
+#order it
+food.choices$ethnic_food <- ordered(food.choices$ethnic_food,
+                                    levels=c("very unlikely",
+                                             "unlikely",
+                                             "neutral",
+                                             "likely",
+                                             "very likely"))
+#check work
+str(food.choices$ethnic_food)
+
+# ----- exercise Column
+unique(food.choices$exercise)
+# from codebook_food
+# 1= everyday
+# 2= 2-3 times
+# 3= 1 time
+# 5= never
+# replace variables
+food.choices$exercise <- as.character(food.choices$exercise)
+food.choices$exercise[food.choices$exercise == "1"] = "everyday"
+food.choices$exercise[food.choices$exercise == "2"] = "2-3 times"
+food.choices$exercise[food.choices$exercise == "3"] = "1 time"
+food.choices$exercise[food.choices$exercise == "5"] = "never"
+# check work
+unique(food.choices$exercise)
+
+# change to factor
+food.choices$exercise <- as.factor(food.choices$exercise)
+#order it
+food.choices$exercise <- ordered(food.choices$exercise,
+                                 levels=c("everyday",
+                                          "2-3 times",
+                                          "1 time",
+                                          "never"))
+#check work
+str(food.choices$exercise)
+
+# ----- father_education Column
+# look at responses
+unique(food.choices$father_education)
+# from codebook_food
+# 1= less than high school
+# 2= high school
+# 3= some college
+# 4= college
+# 5= graduate
+# replace variables
+food.choices$father_education <- gsub(1, "less than hs", food.choices$father_education)
+food.choices$father_education <- gsub(2, "hs", food.choices$father_education)
+food.choices$father_education <- gsub(3, "some college", food.choices$father_education)
+food.choices$father_education <- gsub(4, "college", food.choices$father_education)
+food.choices$father_education <- gsub(5, "graduate", food.choices$father_education)
+# check work
+unique(food.choices$father_education)
+
+# change to factor
+food.choices$father_education <- as.factor(food.choices$father_education)
+#order it
+food.choices$father_education <- ordered(food.choices$father_education,
+                                         levels=c("less than hs",
+                                                  "hs",
+                                                  "some college",
+                                                  "college",
+                                                  "graduate"))
+#check work
+str(food.choices$father_education)
+
+# ----- fav_cuisine_coded Column
+# from codebook_food
+# 0=none
+# 1=italian/french/greek
+# 2=spanish/mexican
+# 3=arabic/turkish
+# 4=asian/chinese/thai/nepal
+# 5=american
+# 6=african
+# 7=jamaican
+# 8=indian
+#replace variables
+food.choices$fav_cuisine_coded <- gsub(0, "none", food.choices$fav_cuisine_coded)
+food.choices$fav_cuisine_coded <- gsub(1, "italian/french/greek", food.choices$fav_cuisine_coded)
+food.choices$fav_cuisine_coded <- gsub(2, "spanish/mexican", food.choices$fav_cuisine_coded)
+food.choices$fav_cuisine_coded <- gsub(3, "arabic/turkish", food.choices$fav_cuisine_coded)
+food.choices$fav_cuisine_coded <- gsub(4, "asian/chinese/thai/nepal", food.choices$fav_cuisine_coded)
+food.choices$fav_cuisine_coded <- gsub(5, "american", food.choices$fav_cuisine_coded)
+food.choices$fav_cuisine_coded <- gsub(6, "african", food.choices$fav_cuisine_coded)
+food.choices$fav_cuisine_coded <- gsub(7, "jamaican", food.choices$fav_cuisine_coded)
+food.choices$fav_cuisine_coded <- gsub(8, "indian", food.choices$fav_cuisine_coded)
+#check work
+unique(food.choices$fav_cuisine_coded)
+
+#change to factor
+food.choices$fav_cuisine_coded <- as.factor(food.choices$fav_cuisine_coded)
+#check work
+str(food.choices$fav_cuisine_coded)
+
+# ----- fav_food Column
+#from codebook_food
+# 1= cooked at home
+# 2= store bought
+# 3= both
+#replace variables
+food.choices$fav_food <- gsub(1, "cooked at home", food.choices$fav_food)
+food.choices$fav_food <- gsub(2, "store bought", food.choices$fav_food)
+food.choices$fav_food <- gsub(3, "both", food.choices$fav_food)
+#check work
+unique(food.choices$fav_food)
+
+#change to factor
+food.choices$fav_food <- as.factor(food.choices$fav_food)
+#check work
+str(food.choices$fav_food)
+
+# ----- Fries Column
+# from codebook_food
+# 1= mcdonald's fries
+# 2= home fires
+#replace variables
+food.choices$fries <- gsub(1, "mcdonald's fries", food.choices$fries)
+food.choices$fries <- gsub(2, "home fries", food.choices$fries)
+#check work
+unique(food.choices$fries)
+
+#change to factor
+food.choices$fries <- as.factor(food.choices$fries)
+#check work
+str(food.choices$fries)
+
+# ----- fruit_day column
+# look at responses
+unique(food.choices$fruit_day)
+#from codebook_food
+# 1= very unlikely
+# 2= unlikely
+# 3= neutral
+# 4= likely
+# 5= very likely
+# replace variables
+food.choices$fruit_day <- gsub(1, "very unlikely", food.choices$fruit_day)
+food.choices$fruit_day <- gsub(2, "unlikely", food.choices$fruit_day)
+food.choices$fruit_day <- gsub(3, "neutral", food.choices$fruit_day)
+food.choices$fruit_day <- gsub(4, "likely", food.choices$fruit_day)
+food.choices$fruit_day <- gsub(5, "very likely", food.choices$fruit_day)
+#check work
+unique(food.choices$fruit_day)
+
+#change to factor
+food.choices$fruit_day <- as.factor(food.choices$fruit_day)
+#order it
+food.choices$fruit_day <- ordered(food.choices$fruit_day,
+                                  levels=c("very unlikely",
+                                           "unlikely",
+                                           "neutral",
+                                           "likely",
+                                           "very likely"))
+#check work
+str(food.choices$fruit_day)
+
+# ----- grade_level COlumn
+# from codebook_food
+# 1= freshman
+# 2= sophomore
+# 3= junior
+# 4= senior
+#replace varilables
+food.choices$grade_level <- gsub(1, "freshman", food.choices$grade_level)
+food.choices$grade_level <- gsub(2, "sophomore", food.choices$grade_level)
+food.choices$grade_level <- gsub(3, "junior", food.choices$grade_level)
+food.choices$grade_level <- gsub(4, "senior", food.choices$grade_level)
+#check work 
+unique(food.choices$grade_level)
+
+#change to factor
+food.choices$grade_level <- as.factor(food.choices$grade_level)
+#order it
+food.choices$grade_level <- ordered(food.choices$grade_level,
+                                    levels=c("freshman",
+                                             "sophomore",
+                                             "junior",
+                                             "senior"))
+#check work
+str(food.choices$grade_level)
+
+# ----- greek_food Columm
+#from codebook_food
+# 1= very unlikely
+# 2= unlikely
+# 3= neutral
+# 4= likely
+# 5= very likely
+#replace varilables
+food.choices$greek_food <- gsub(1, "very unlikely", food.choices$greek_food)
+food.choices$greek_food <- gsub(2, "unlikely", food.choices$greek_food)
+food.choices$greek_food <- gsub(3, "neutral", food.choices$greek_food)
+food.choices$greek_food <- gsub(4, "likely", food.choices$greek_food)
+food.choices$greek_food <- gsub(5, "very likely", food.choices$greek_food)
+#check work
+unique(food.choices$greek_food)
+
+#change to factor
+food.choices$greek_food <- as.factor(food.choices$greek_food)
+#order it
+food.choices$greek_food <- ordered(food.choices$greek_food,
+                                   levels=c("very unlikely",
+                                            "unlikely",
+                                            "neutral",
+                                            "likely",
+                                            "very likely"))
+#check work
+str(food.choices$greek_food)
+
+# ----- ideal_diet_coded Column
+# from codebook_food
+# 1= portion control
+# 2= adding healthier food
+# 3= balance
+# 4= less sugar
+# 5= home cooked/organic
+# 6= current diet
+# 7= more protein
+# 8= unclear
+# replace varilables
+food.choices$ideal_diet_coded <- gsub(1, "portion control", food.choices$ideal_diet_coded)
+food.choices$ideal_diet_coded <- gsub(2, "adding healthier food", food.choices$ideal_diet_coded)
+food.choices$ideal_diet_coded <- gsub(3, "balance", food.choices$ideal_diet_coded)
+food.choices$ideal_diet_coded <- gsub(4, "less sugar", food.choices$ideal_diet_coded)
+food.choices$ideal_diet_coded <- gsub(5, "home cooked/organic", food.choices$ideal_diet_coded)
+food.choices$ideal_diet_coded <- gsub(6, "current diet", food.choices$ideal_diet_coded)
+food.choices$ideal_diet_coded <- gsub(7, "more protein", food.choices$ideal_diet_coded)
+food.choices$ideal_diet_coded <- gsub(8, "unclear", food.choices$ideal_diet_coded)
+#check work
+unique(food.choices$ideal_diet_coded)
+
+#change to factor
+food.choices$ideal_diet_coded <- as.factor(food.choices$ideal_diet_coded)
+#check work
+str(food.choices$ideal_diet_coded)
+
+# ----- income Column
+# from codebook_food
+# 1= less than $15k
+# 2= $15 - 30K
+# 3= $30 - 50k
+# 4= $50 - 70k
+# 5= $70 - 100k
+# 6= more than 100k
+# replace varilables
+food.choices$income <- as.character(food.choices$income)
+food.choices$income[food.choices$income == "1"] = "less than 15k"
+food.choices$income[food.choices$income == "2"] = "$15 - 30k"
+food.choices$income[food.choices$income == "3"] = "$30 - 50k"
+food.choices$income[food.choices$income == "4"] = "$50 - 70k"
+food.choices$income[food.choices$income == "5"] = "$70 - 100k"
+food.choices$income[food.choices$income == "6"] = "more than 100k"
+#check work
+unique(food.choices$income)
+
+#change to factor
+food.choices$income <- as.factor(food.choices$income)
+#order it
+food.choices$income <- ordered(food.choices$income,
+                               levels=c("less than 15k",
+                                        "$15 - 30k",
+                                        "$30 - 50k",
+                                        "$50 - 70k",
+                                        "$70 - 100k",
+                                        "more than 100k"))
+#check work
+str(food.choices$income)
+
+# ----- indian_food Column
+#from codebook_food
+# 1= very unlikely
+# 2= unlikely
+# 3= neutral
+# 4= likely
+# 5= very likely
+#replace varilables
+food.choices$indian_food <- gsub(1, "very unlikely", food.choices$indian_food)
+food.choices$indian_food <- gsub(2, "unlikely", food.choices$indian_food)
+food.choices$indian_food <- gsub(3, "neutral", food.choices$indian_food)
+food.choices$indian_food <- gsub(4, "likely", food.choices$indian_food)
+food.choices$indian_food <- gsub(5, "very likely", food.choices$indian_food)
+#check work
+unique(food.choices$indian_food)
+
+#change to factor
+food.choices$indian_food <- as.factor(food.choices$indian_food)
+#order it
+food.choices$indian_food <- ordered(food.choices$indian_food,
+                                    levels=c("very unlikely",
+                                             "unlikely",
+                                             "neutral",
+                                             "likely",
+                                             "very likely"))
+#check work
+str(food.choices$indian_food)
+
+# ----- italian_food column
+#from codebook_food
+# 1= very unlikely
+# 2= unlikely
+# 3= neutral
+# 4= likely
+# 5= very likely
+#replace varilables
+food.choices$italian_food <- gsub(3, "neutral", food.choices$italian_food)
+food.choices$italian_food <- gsub(4, "likely", food.choices$italian_food)
+food.choices$italian_food <- gsub(5, "very likely", food.choices$italian_food)
+#check work
+unique(food.choices$italian_food)
+
+#change to factor
+food.choices$italian_food <- as.factor(food.choices$italian_food)
+#order it
+food.choices$italian_food <- ordered(food.choices$italian_food,
+                                     levels=c("neutral",
+                                              "likely",
+                                              "very likely"))
+#check work
+str(food.choices$italian_food)
+
+
+# ----- marital_status Column
+#from codebook_food
+# 1= single
+# 2= in a relationship
+# 4= married
+# replace variables
+food.choices$marital_status <- gsub(1, "single", food.choices$marital_status)
+food.choices$marital_status <- gsub(2, "in a relationship", food.choices$marital_status)
+food.choices$marital_status <- gsub(4, "married", food.choices$marital_status)
+#check work
+unique(food.choices$marital_status)
+
+#change to factor
+food.choices$marital_status <- as.factor(food.choices$marital_status)
+#order it
+food.choices$marital_status <- ordered(food.choices$marital_status,
+                                       levels=c("single",
+                                                "in a relationship",
+                                                "married"))
+#check work
+str(food.choices$marital_status)
+
+# ----- mother_education COlumn
+# from codebook_food
+# 1= less than high school
+# 2= high school
+# 3= some college
+# 4= college
+# 5= graduate
+# replace variables
+food.choices$mother_education <- gsub(1, "less than hs", food.choices$mother_education)
+food.choices$mother_education <- gsub(2, "hs", food.choices$mother_education)
+food.choices$mother_education <- gsub(3, "some college", food.choices$mother_education)
+food.choices$mother_education <- gsub(4, "college", food.choices$mother_education)
+food.choices$mother_education <- gsub(5, "graduate", food.choices$mother_education)
+# check work
+unique(food.choices$mother_education)
+
+# change to factor
+food.choices$mother_education <- as.factor(food.choices$mother_education)
+# order it
+food.choices$mother_education <- ordered(food.choices$mother_education,
+                                         levels=c("less than hs",
+                                                  "hs",
+                                                  "some college",
+                                                  "college",
+                                                  "graduate"))
+#check work
+str(food.choices$mother_education)
+
+# ----- nutritional_check Column
+# from codebook_food
+# 1= never
+# 2= on certain products only
+# 3= very rarely
+# 4= on most products
+# 5= on everything
+# replace variables
+food.choices$nutritional_check <- gsub(1, "never", food.choices$nutritional_check)
+food.choices$nutritional_check <- gsub(2, "certain products only", food.choices$nutritional_check)
+food.choices$nutritional_check <- gsub(3, "very rarely", food.choices$nutritional_check)
+food.choices$nutritional_check <- gsub(4, "most products", food.choices$nutritional_check)
+food.choices$nutritional_check <- gsub(5, "everything",food.choices$nutritional_check)
+#check work
+unique(food.choices$nutritional_check)
+
+#change to factor
+food.choices$nutritional_check <- as.factor(food.choices$nutritional_check)
+#order it
+food.choices$nutritional_check <- ordered(food.choices$nutritional_check,
+                                          levels=c("never",
+                                                   "certain products only",
+                                                   "very rarely",
+                                                   "most products",
+                                                   "everything"))
+#check work
+str(food.choices$nutritional_check)
+
+
+# ----- on_off_campus COlumn
+#from codebook_food
+# 1= on campus
+# 2= rent off campus
+# 3= parents
+# 4= own house
+# replace variables
+food.choices$on_off_campus <- gsub(1, "on campus",food.choices$on_off_campus)
+food.choices$on_off_campus <- gsub(2, "rent off campus", food.choices$on_off_campus)
+food.choices$on_off_campus <- gsub(3, "parents", food.choices$on_off_campus)
+food.choices$on_off_campus <- gsub(4, "own house", food.choices$on_off_campus)
+#check work
+unique(food.choices$on_off_campus)
+
+#change to factor
+food.choices$on_off_campus <- as.factor(food.choices$on_off_campus)
+#check work
+str(food.choices$on_off_campus)
+
+# ----- parents_cook COlumn
+#from codebook_food
+# 1= almost everyday
+# 2= 2-3 times a week
+# 3= 1-2 times a week
+# 4= holidays only
+# 5= never
+# replace variables
+food.choices$parents_cook <- as.character(food.choices$parents_cook)
+food.choices$parents_cook[food.choices$parents_cook == "1"] = "almost everyday"
+food.choices$parents_cook[food.choices$parents_cook == "2"] = "2-3 times a week"
+food.choices$parents_cook[food.choices$parents_cook == "3"] = "1-2 times a week"
+food.choices$parents_cook[food.choices$parents_cook == "4"] = "holidays"
+food.choices$parents_cook[food.choices$parents_cook == "5"] = "never"
+#check work
+unique(food.choices$parents_cook)
+
+#change to factor
+food.choices$parents_cook <- as.factor(food.choices$parents_cook)
+#order it
+food.choices$parents_cook <- ordered(food.choices$parents_cook,
+                                     levels=c("almost everyday",
+                                              "2-3 times a week",
+                                              "1-2 times a week",
+                                              "holidays",
+                                              "never"))
+# check work
+str(food.choices$parents_cook)
+
+# ----- pay_meal_out Column
+# from codebook_food
+# 1= up to $5
+# 2= $5.01-10
+# 3= $10.01-20
+# 4= $20.01-30
+# 5= $30.01-40
+# 6= 40.01+
+#change variables
+food.choices$pay_meal_out <- as.character(food.choices$pay_meal_out)
+food.choices$pay_meal_out[food.choices$pay_meal_out == "1"] = "up to $5"
+food.choices$pay_meal_out[food.choices$pay_meal_out == "2"] = "$5.01 - $10.00"
+food.choices$pay_meal_out[food.choices$pay_meal_out == "3"] = "$10.01 - $20.00"
+food.choices$pay_meal_out[food.choices$pay_meal_out == "4"] = "$20.01 - $30.00"
+food.choices$pay_meal_out[food.choices$pay_meal_out == "5"] = "$30.01 - $40.00"
+food.choices$pay_meal_out[food.choices$pay_meal_out == "6"] = "$40.01+"
+#check work
+unique(food.choices$pay_meal_out)
+
+#change to factor
+food.choices$pay_meal_out <- as.factor(food.choices$pay_meal_out)
+#order it
+food.choices$pay_meal_out <- ordered(food.choices$pay_meal_out,
+                                     levels=c("up to $5",
+                                              "$5.01 - $10.00",
+                                              "$10.01 - $20.00",
+                                              "$20.01 - $30.00",
+                                              "$30.01 - $40.00",
+                                              "$40.01+"))
+#check work
+str(food.choices$pay_meal_out)
+
+# ----- Persian_food
+#from codebook_food
+# 1= very unlikely
+# 2= unlikely
+# 3= neutral
+# 4= likely
+# 5= very likely
+#replace variables
+food.choices$persian_food <- gsub(1, "very unlikely", food.choices$persian_food)
+food.choices$persian_food <- gsub(2, "unlikely", food.choices$persian_food)
+food.choices$persian_food <- gsub(3, "neutral", food.choices$persian_food)
+food.choices$persian_food <- gsub(4, "likely", food.choices$persian_food)
+food.choices$persian_food <- gsub(5, "very likely", food.choices$persian_food)
+#check work
+unique(food.choices$persian_food)
+
+#change to factor
+food.choices$persian_food <- as.factor(food.choices$persian_food)
+#order it
+food.choices$persian_food <- ordered(food.choices$persian_food,
+                                     levels=c("very unlikely",
+                                              "unlikely",
+                                              "neutral",
+                                              "likely",
+                                              "very likely"))
+#check work
+str(food.choices$persian_food)
+
+# ----- self_perception_weight Column
+#from codebook_food
+# 1= i dont think myself in these terms
+# 2= overweight
+# 3= slightly overweight
+# 4= just right
+# 5= very fit
+# 6= slim
+#replace variables
+food.choices$self_perception_weight <- gsub(1, "other term", food.choices$self_perception_weight)
+food.choices$self_perception_weight <- gsub(2, "overweight", food.choices$self_perception_weight)
+food.choices$self_perception_weight <- gsub(3, "slightly overweight", food.choices$self_perception_weight)
+food.choices$self_perception_weight <- gsub(4, "just right", food.choices$self_perception_weight)
+food.choices$self_perception_weight <- gsub(5, "very fit", food.choices$self_perception_weight)
+food.choices$self_perception_weight <- gsub(6, "slim", food.choices$self_perception_weight)
+#check work
+unique(food.choices$self_perception_weight)
+
+#change to factor
+food.choices$self_perception_weight <- as.factor(food.choices$self_perception_weight)
+# order it
+food.choices$self_perception_weight <- ordered(food.choices$self_perception_weight,
+                                               levels=c("other term",
+                                                        "overweight",
+                                                        "slightly overweight",
+                                                        "just right",
+                                                        "very fit",
+                                                        "slim"))
+#check work
+str(food.choices$self_perception_weight)
+
+# ----- Soup Column
+#from codebook_food
+# 1= veggie soup
+# 2= creamy soup
+# replace variables
+food.choices$soup <- gsub(1, "veggie soup", food.choices$soup)
+food.choices$soup <- gsub(2, "creamy soup", food.choices$soup)
+#check work
+unique(food.choices$soup)
+
+#change to factor
+food.choices$soup <- as.factor(food.choices$soup)
+#check work
+str(food.choices$soup)
+
+# ----- sports Column
+#from codebook_food
+# 1= yes
+# 2= no
+#replace variables
+food.choices$sports <- gsub(1, "yes", food.choices$sports)
+food.choices$sports <- gsub(2, "no", food.choices$sports)
+#check work
+unique(food.choices$sports)
+
+#change to factor
+food.choices$sports <- as.factor(food.choices$sports)
+#check work
+str(food.choices$sports)
+
+# ----- thai_food Column
+#from codebook_food
+# 1= very unlikely
+# 2= unlikely
+# 3= neutral
+# 4= likely
+# 5= very likely
+#replace variables
+food.choices$thai_food <- gsub(1, "very unlikely", food.choices$thai_food)
+food.choices$thai_food <- gsub(2, "unlikely", food.choices$thai_food)
+food.choices$thai_food <- gsub(3, "neutral", food.choices$thai_food)
+food.choices$thai_food <- gsub(4, "likely", food.choices$thai_food)
+food.choices$thai_food <- gsub(5, "very likely", food.choices$thai_food)
+#check work
+unique(food.choices$thai_food)
+
+#change to factor
+food.choices$thai_food <- as.factor(food.choices$thai_food)
+#order it
+food.choices$thai_food <- ordered(food.choices$thai_food,
+                                  levels=c("very unlikely",
+                                           "unlikely",
+                                           "neutral",
+                                           "likely",
+                                           "very likely"))
+#check work
+str(food.choices$thai_food)
+
+# ----- veggie_day Column
+#from codebook_food
+# 1= very unlikely
+# 2= unlikely
+# 3= neutral
+# 4= likely
+# 5= very likely
+#replace variables
+food.choices$veggies_day <- gsub(1, "very unlikey", food.choices$veggies_day)
+food.choices$veggies_day <- gsub(2, "unlikely", food.choices$veggies_day)
+food.choices$veggies_day <- gsub(3, "neutral", food.choices$veggies_day)
+food.choices$veggies_day <- gsub(4, "likely", food.choices$veggies_day)
+food.choices$veggies_day <- gsub(5, "very likely", food.choices$veggies_day)
+#check work
+unique(food.choices$veggies_day)
+
+#change to factor
+food.choices$veggies_day <- as.factor(food.choices$veggies_day)
+#order it
+food.choices$veggies_day <- ordered(food.choices$veggies_day,
+                                    levels=c("very unlikely",
+                                             "unlikely",
+                                             "neutral",
+                                             "likely",
+                                             "very likely"))
+#check work
+str(food.choices$veggies_day)
+
+# ----- vitamins Column
+# from codebook_food
+# 1= yes
+# 2= no
+#replace variables
+food.choices$vitamins <- gsub(1, "yes", food.choices$vitamins)
+food.choices$vitamins <- gsub(2, "no", food.choices$vitamins)
+#check work 
+unique(food.choices$vitamins)
+
+#change to factor
+food.choices$vitamins <- as.factor(food.choices$vitamins)
+#check work
+str(food.choices$vitamins)
+
+
+
+
+# ----- creating different datasets -----
+food.choices$healthy_feeling <- as.numeric(food.choices$healthy_feeling)
+hf.discrete <- cut(food.choices$healthy_feeling,
+                       breaks=c(-Inf, 4.1, 7.1, Inf),
+                       labels=c("unhealthy", "average", "healthy"))
+
+food.choices.coded <- food.choices
+str(food.choices.coded)
+
+### number only data set
+#copy data
+food.choices.numbonly <- food.choices.coded
+#remove columns with words
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "comfort_food"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "comfort_food_reasons"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "diet_current"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "eating_changes"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "father_profession"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "food_childhood"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "healthy_meal"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "ideal_diet"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "meals_dinner_friend"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "mother_profession"))]
+food.choices.numbonly <- food.choices.numbonly[,-(which(colnames(food.choices.numbonly) == "type_sports"))]
+
+str(food.choices.numbonly)
+
+  # change all to integer
+for (column in 2:48){
+  food.choices.numbonly[,column] <- as.numeric(food.choices.numbonly[,column])
+}
+  #check work
+str(food.choices.numbonly)
+food.choices.numbonly$healthy_feeling = hf.discrete
+
+### discrete dataset
+# copy data set
+fc.discrete <- food.choices
+summary(fc.discrete$GPA)
+fc.discrete$GPA <- cut(fc.discrete$GPA,
+                       breaks=c(-Inf, 3.2, 3.5, 3.7, Inf),
+                       labels=c("very bad", "bad", "good", "very good"))
+str(fc.discrete)
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "comfort_food"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "comfort_food_reasons"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "diet_current"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "eating_changes"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "father_profession"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "food_childhood"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "mother_profession"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "healthy_meal"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "ideal_diet"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "meals_dinner_friend"))]
+fc.discrete <- fc.discrete[,-(which(colnames(fc.discrete) == "type_sports"))]
+summary(fc.discrete$weight)
+fc.discrete$weight <- cut(fc.discrete$weight,
+                          breaks=c(-Inf,135,155,180,Inf),
+                          labels=c("light", "average","heavy", "very heavy"))
+hf.discrete <- fc.discrete$healthy_feeling
+
+###exercise dataset
+exercise <- data.frame(exercise=food.choices$exercise,
+                       healthy_feeling=hf.discrete,
+                       sports=food.choices$sports,
+                       weight=food.choices$weight)
+exercise.num <- data.frame(exercise=food.choices.coded$exercise,
+                       sports=food.choices.coded$sports,
+                       weight=food.choices.coded$weight)
+
+for (column in 1:3){
+  exercise.num[,column] <- as.numeric(exercise.num[,column])
+}
+exercise.num <- data.frame(exercise.num,
+                           healthy_feeling=hf.discrete)
+
+### uprbinging dataset
+upbringing <- data.frame(father_education=food.choices$father_education,
+                         healthy_feeling=hf.discrete,
+                         income=food.choices$income,
+                         mother_education=food.choices$mother_education,
+                         parent_cook=food.choices$parents_cook)
+upbringing.num <- data.frame(father_education=food.choices.coded$father_education,
+                         income=food.choices.coded$income,
+                         mother_education=food.choices.coded$mother_education,
+                         parent_cook=food.choices.coded$parents_cook)
+for (column in 1:4){
+  upbringing.num[,column] <- as.numeric(upbringing.num[,column])
+}
+
+upbringing.num <- data.frame(upbringing.num,
+                             healthy_feeling=hf.discrete)
+
+### food dataset
+food.intake <- data.frame(comfort_food_reasons=food.choices$comfort_food_reasons_coded,
+                          cook=food.choices$cook,
+                          cuisine=food.choices$cuisine,
+                          eating_out=food.choices$eating_out,
+                          ethnic_food=food.choices$ethnic_food,
+                          fav_cuisine=food.choices$fav_cuisine_coded,
+                          fav_food=food.choices$fav_food,
+                          fruit_day=food.choices$fruit_day,
+                          greek_food=food.choices$greek_food,
+                          healthy_feeling=hf.discrete,
+                          indian_food=food.choices$indian_food,
+                          italian_food=food.choices$italian_food,
+                          pay_meal_out=food.choices$pay_meal_out,
+                          persian_food=food.choices$persian_food,
+                          thai_food=food.choices$thai_food,
+                          veggies_day=food.choices$veggies_day)
+
+food.intake.num <- data.frame(comfort_food_reasons=food.choices.coded$comfort_food_reasons_coded,
+                          cook=food.choices.coded$cook,
+                          cuisine=food.choices.coded$cuisine,
+                          eating_out=food.choices.coded$eating_out,
+                          ethnic_food=food.choices.coded$ethnic_food,
+                          fav_cuisine=food.choices.coded$fav_cuisine_coded,
+                          fav_food=food.choices.coded$fav_food,
+                          fruit_day=food.choices.coded$fruit_day,
+                          greek_food=food.choices.coded$greek_food,
+                          indian_food=food.choices.coded$indian_food,
+                          italian_food=food.choices.coded$italian_food,
+                          pay_meal_out=food.choices.coded$pay_meal_out,
+                          persian_food=food.choices.coded$persian_food,
+                          thai_food=food.choices.coded$thai_food,
+                          veggies_day=food.choices.coded$veggies_day)
+
+for (column in 1:15){
+  food.intake.num[,column] <- as.numeric(food.intake.num[,column])
+}
+food.intake.num <- data.frame(food.intake.num,
+                              healthy_feeling=hf.discrete)
+
+food.asso <- data.frame(breakfast=food.choices$breakfast,
+                        coffee=food.choices$coffee,
+                        drink=food.choices$drink,
+                        fries=food.choices$fries,
+                        soup=food.choices$soup,
+                        healthy_feeling=hf.discrete)
+
+food.asso.num <- data.frame(breakfast=food.choices.coded$breakfast,
+                        coffee=food.choices.coded$coffee,
+                        drink=food.choices.coded$drink,
+                        fries=food.choices.coded$fries,
+                        soup=food.choices.coded$soup)
+
+for (column in 1:5){
+  food.asso.num[,column] <- as.numeric(food.asso.num[,column])
+}
+food.asso.num <- data.frame(food.asso.num,
+                            healthy_feeling=hf.discrete)
+
+
+health <- data.frame(calories_chicken=food.choices$calories_chicken,
+                     calories_day=food.choices$calories_day,
+                     calories_scone=food.choices$calories_scone,
+                     diet_current=food.choices$diet_current_coded,
+                     eating_changes=food.choices$eating_changes_coded,
+                     eating_changes1=food.choices$eating_changes_coded1,
+                     healthy_feeling=hf.discrete,
+                     ideal_diet=food.choices$ideal_diet_coded,
+                     nutritional_check=food.choices$nutritional_check,
+                     self_perception_weight=food.choices$self_perception_weight,
+                     tortilla_calories=food.choices$tortilla_calories,
+                     turkey_calories=food.choices$turkey_calories,
+                     vitamins=food.choices$vitamins,
+                     waffle_calories=food.choices$waffle_calories)
+
+health.num <- data.frame(calories_chicken=food.choices.coded$calories_chicken,
+                     calories_day=food.choices.coded$calories_day,
+                     calories_scone=food.choices.coded$calories_scone,
+                     diet_current=food.choices.coded$diet_current_coded,
+                     eating_changes=food.choices.coded$eating_changes_coded,
+                     eating_changes1=food.choices.coded$eating_changes_coded1,
+                     ideal_diet=food.choices.coded$ideal_diet_coded,
+                     nutritional_check=food.choices.coded$nutritional_check,
+                     self_perception_weight=food.choices.coded$self_perception_weight,
+                     tortilla_calories=food.choices.coded$tortilla_calories,
+                     turkey_calories=food.choices.coded$turkey_calories,
+                     vitamins=food.choices.coded$vitamins,
+                     waffle_calories=food.choices.coded$waffle_calories)
+ 
+for (column in 1:13){
+  health.num[,column] <- as.numeric(health.num[,column])
+}
+health.num <- data.frame(health.num,
+                         healthy_feeling=hf.discrete)
+
+### status dataset
+status <- data.frame(GPA=food.choices$GPA,
+                     gender=food.choices$Gender,
+                     employment=food.choices$employment,
+                     grade_level=food.choices$grade_level,
+                     healthy_feeling=hf.discrete,
+                     life_rewarding=food.choices$life_rewarding,
+                     martial_status=food.choices$marital_status,
+                     on_off_campus=food.choices$on_off_campus)
+
+status.num <- data.frame(GPA=food.choices.coded$GPA,
+                     gender=food.choices.coded$Gender,
+                     employment=food.choices.coded$employment,
+                     grade_level=food.choices.coded$grade_level,
+                     life_rewarding=food.choices.coded$life_rewarding,
+                     martial_status=food.choices.coded$marital_status,
+                     on_off_campus=food.choices$on_off_campus)
+
+for (column in 1:7){
+  status.num[,column] <- as.numeric(status.num[,column])
+}
+status.num <- data.frame(status.num,
+                         healthy_feeling=hf.discrete)
+
+```
